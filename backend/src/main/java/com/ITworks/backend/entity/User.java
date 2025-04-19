@@ -2,12 +2,25 @@ package com.ITworks.backend.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
+// import java.util.Collections;
+import java.util.List;
 
 @Entity
 @Table(name = "[USER]")
-public class User {
+@Getter
+@Setter
+public class User implements UserDetails {
+
+    
     
     @Id
     @Column(name = "ID")
@@ -26,7 +39,7 @@ public class User {
     @Size(min = 6, message = "Password must be at least 6 characters long")
     private String password;
     
-    @Column(name = "FName", nullable = false, length = 50)
+    @Column(name = "FName", nullable = false, length = 50) 
     private String firstName;
     
     @Column(name = "LName", nullable = false, length = 50)
@@ -56,101 +69,50 @@ public class User {
     @Column(name = "PhoneNum", nullable = false, length = 20)
     @Pattern(regexp = "0[0-9]*", message = "Phone number must start with 0 and contain only digits")
     private String phoneNum;
-    
-    // Getters and Setters
-    public Integer getId() {
-        return id;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Candidate candidate;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Employer employer;
+
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        
+        // Add base role
+        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+        
+        // Add role based on profile type
+        if (candidate != null) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_CANDIDATE"));
+        }
+        
+        if (employer != null) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_EMPLOYER"));
+        }
+        
+        return authorities;
     }
 
-    public void setId(Integer id) {
-        this.id = id;
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
     }
 
-    public String getUsername() {
-        return username;
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
     }
 
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public LocalDateTime getCreatedDate() {
-        return createdDate;
-    }
-
-    public void setCreatedDate(LocalDateTime createdDate) {
-        this.createdDate = createdDate;
-    }
-
-    public String getProfilePicture() {
-        return profilePicture;
-    }
-
-    public void setProfilePicture(String profilePicture) {
-        this.profilePicture = profilePicture;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public LocalDate getBDate() {
-        return bDate;
-    }
-
-    public void setBDate(LocalDate bDate) {
-        this.bDate = bDate;
-    }
-
-    public String getBio() {
-        return bio;
-    }
-
-    public void setBio(String bio) {
-        this.bio = bio;
-    }
-
-    public String getPhoneNum() {
-        return phoneNum;
-    }
-
-    public void setPhoneNum(String phoneNum) {
-        this.phoneNum = phoneNum;
+    @Override
+    public boolean isEnabled() {
+        return true;
     }
 }

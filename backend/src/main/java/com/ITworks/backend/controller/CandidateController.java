@@ -80,5 +80,4 @@ public class CandidateController {
     
     // Job related endpoints
     
-    
 }

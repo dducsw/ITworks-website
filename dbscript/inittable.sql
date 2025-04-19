@@ -622,4 +622,416 @@ END;
 GO
 
 
+-- Thủ tục để thêm công việc mới
+CREATE OR ALTER PROCEDURE InsertJob
+    @JobType NVARCHAR(50),
+    @ContractType NVARCHAR(50),
+    @Level NVARCHAR(50),
+    @Quantity INT,
+    @SalaryFrom DECIMAL(18,2),
+    @SalaryTo DECIMAL(18,2),
+    @RequireExpYear INT = NULL,
+    @Location NVARCHAR(100),
+    @JD NVARCHAR(MAX),
+    @JobName NVARCHAR(100),
+    @expireDate DATETIME2,
+    @JobStatus NVARCHAR(50),
+    @EmployerID INT,
+    @TaxNumber VARCHAR(13)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    BEGIN TRY
+        -- Kiểm tra các giá trị không được NULL
+        IF @JobType IS NULL OR LEN(TRIM(@JobType)) = 0
+        BEGIN
+            RAISERROR('Loại công việc không được để trống.', 16, 1);
+            RETURN;
+        END
+        
+        IF @ContractType IS NULL OR LEN(TRIM(@ContractType)) = 0
+        BEGIN
+            RAISERROR('Loại hợp đồng không được để trống.', 16, 1);
+            RETURN;
+        END
+        
+        IF @Level IS NULL OR LEN(TRIM(@Level)) = 0
+        BEGIN
+            RAISERROR('Cấp bậc không được để trống.', 16, 1);
+            RETURN;
+        END
+        
+        -- Kiểm tra số lượng tuyển dụng
+        IF @Quantity IS NULL OR @Quantity <= 0
+        BEGIN
+            RAISERROR('Số lượng tuyển dụng phải lớn hơn 0.', 16, 1);
+            RETURN;
+        END
+        
+        -- Kiểm tra mức lương
+        IF @SalaryFrom IS NULL OR @SalaryFrom < 0
+        BEGIN
+            RAISERROR('Mức lương từ không được âm.', 16, 1);
+            RETURN;
+        END
+        
+        IF @SalaryTo IS NULL OR @SalaryTo < @SalaryFrom
+        BEGIN
+            RAISERROR('Mức lương tối đa phải lớn hơn hoặc bằng mức lương từ.', 16, 1);
+            RETURN;
+        END
+        
+        -- Kiểm tra số năm kinh nghiệm yêu cầu
+        IF @RequireExpYear IS NOT NULL AND @RequireExpYear < 0
+        BEGIN
+            RAISERROR('Số năm kinh nghiệm yêu cầu không được âm.', 16, 1);
+            RETURN;
+        END
+        
+        -- Kiểm tra địa điểm làm việc
+        IF @Location IS NULL OR LEN(TRIM(@Location)) = 0
+        BEGIN
+            RAISERROR('Địa điểm làm việc không được để trống.', 16, 1);
+            RETURN;
+        END
+        
+        -- Kiểm tra mô tả công việc
+        IF @JD IS NULL OR LEN(TRIM(@JD)) = 0
+        BEGIN
+            RAISERROR('Mô tả công việc không được để trống.', 16, 1);
+            RETURN;
+        END
+        
+        -- Kiểm tra tên công việc
+        IF @JobName IS NULL OR LEN(TRIM(@JobName)) = 0
+        BEGIN
+            RAISERROR('Tên công việc không được để trống.', 16, 1);
+            RETURN;
+        END
+        
+        -- Kiểm tra ngày hết hạn
+        IF @expireDate IS NULL
+        BEGIN
+            RAISERROR('Ngày hết hạn không được để trống.', 16, 1);
+            RETURN;
+        END
+        
+        IF @expireDate <= GETDATE()
+        BEGIN
+            RAISERROR('Ngày hết hạn phải sau ngày hiện tại.', 16, 1);
+            RETURN;
+        END
+        
+        -- Kiểm tra trạng thái công việc
+        IF @JobStatus IS NULL OR LEN(TRIM(@JobStatus)) = 0
+        BEGIN
+            RAISERROR('Trạng thái công việc không được để trống.', 16, 1);
+            RETURN;
+        END
+        
+        -- Kiểm tra ID nhà tuyển dụng
+        IF NOT EXISTS (SELECT 1 FROM EMPLOYER WHERE EmployerID = @EmployerID)
+        BEGIN
+            RAISERROR('Nhà tuyển dụng với ID %d không tồn tại.', 16, 1, @EmployerID);
+            RETURN;
+        END
+        
+        -- Kiểm tra mã số thuế công ty
+        IF NOT EXISTS (SELECT 1 FROM COMPANY WHERE TaxNumber = @TaxNumber)
+        BEGIN
+            RAISERROR('Công ty với mã số thuế %s không tồn tại.', 16, 1, @TaxNumber);
+            RETURN;
+        END
+        
+        -- Kiểm tra định dạng mã số thuế
+        IF NOT (@TaxNumber LIKE '[0-9]%' AND (LEN(@TaxNumber) = 10 OR LEN(@TaxNumber) = 13))
+        BEGIN
+            RAISERROR('Mã số thuế phải bắt đầu bằng số và có độ dài 10 hoặc 13 ký tự.', 16, 1);
+            RETURN;
+        END
+        
+        -- Kiểm tra nhà tuyển dụng có liên quan đến công ty không
+        IF NOT EXISTS (SELECT 1 FROM EMPLOYER WHERE EmployerID = @EmployerID AND TaxNumber = @TaxNumber)
+        BEGIN
+            RAISERROR('Nhà tuyển dụng ID %d không thuộc công ty có mã số thuế %s.', 16, 1, @EmployerID, @TaxNumber);
+            RETURN;
+        END
+        
+        -- Thêm công việc mới
+        INSERT INTO JOB (
+            JobType, ContractType, Level, Quantity, 
+            SalaryFrom, SalaryTo, RequireExpYear, Location, 
+            JD, JobName, postDate, expireDate, 
+            JobStatus, EmployerID, TaxNumber
+        )
+        VALUES (
+            @JobType, @ContractType, @Level, @Quantity, 
+            @SalaryFrom, @SalaryTo, @RequireExpYear, @Location, 
+            @JD, @JobName, GETDATE(), @expireDate, 
+            @JobStatus, @EmployerID, @TaxNumber
+        );
+        
+        DECLARE @NewJobID INT = SCOPE_IDENTITY();
+        PRINT 'Thêm công việc thành công. JobID = ' + CAST(@NewJobID AS NVARCHAR(10));
+        RETURN @NewJobID;
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
+        DECLARE @ErrorState INT = ERROR_STATE();
+        
+        RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH
+END;
+GO
 
+-- Thủ tục để cập nhật thông tin công việc
+CREATE OR ALTER PROCEDURE UpdateJob
+    @JobID INT,
+    @JobType NVARCHAR(50) = NULL,
+    @ContractType NVARCHAR(50) = NULL,
+    @Level NVARCHAR(50) = NULL,
+    @Quantity INT = NULL,
+    @SalaryFrom DECIMAL(18,2) = NULL,
+    @SalaryTo DECIMAL(18,2) = NULL,
+    @RequireExpYear INT = NULL,
+    @Location NVARCHAR(100) = NULL,
+    @JD NVARCHAR(MAX) = NULL,
+    @JobName NVARCHAR(100) = NULL,
+    @expireDate DATETIME2 = NULL,
+    @JobStatus NVARCHAR(50) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    BEGIN TRY
+        -- Kiểm tra công việc có tồn tại không
+        IF NOT EXISTS (SELECT 1 FROM JOB WHERE JobID = @JobID)
+        BEGIN
+            RAISERROR('Công việc với ID %d không tồn tại.', 16, 1, @JobID);
+            RETURN;
+        END
+        
+        -- Lấy thông tin hiện tại của công việc
+        DECLARE @CurrentSalaryFrom DECIMAL(18,2);
+        DECLARE @CurrentExpireDate DATETIME2;
+        
+        SELECT 
+            @CurrentSalaryFrom = SalaryFrom,
+            @CurrentExpireDate = postDate
+        FROM JOB
+        WHERE JobID = @JobID;
+        
+        -- Kiểm tra số lượng tuyển dụng
+        IF @Quantity IS NOT NULL AND @Quantity <= 0
+        BEGIN
+            RAISERROR('Số lượng tuyển dụng phải lớn hơn 0.', 16, 1);
+            RETURN;
+        END
+        
+        -- Kiểm tra mức lương
+        IF @SalaryFrom IS NOT NULL AND @SalaryFrom < 0
+        BEGIN
+            RAISERROR('Mức lương từ không được âm.', 16, 1);
+            RETURN;
+        END
+        
+        IF @SalaryTo IS NOT NULL AND @SalaryFrom IS NULL AND @SalaryTo < @CurrentSalaryFrom
+        BEGIN
+            RAISERROR('Mức lương đến phải lớn hơn hoặc bằng mức lương từ.', 16, 1);
+            RETURN;
+        END
+        
+        IF @SalaryTo IS NOT NULL AND @SalaryFrom IS NOT NULL AND @SalaryTo < @SalaryFrom
+        BEGIN
+            RAISERROR('Mức lương đến phải lớn hơn hoặc bằng mức lương từ.', 16, 1);
+            RETURN;
+        END
+        
+        -- Kiểm tra số năm kinh nghiệm yêu cầu
+        IF @RequireExpYear IS NOT NULL AND @RequireExpYear < 0
+        BEGIN
+            RAISERROR('Số năm kinh nghiệm yêu cầu không được âm.', 16, 1);
+            RETURN;
+        END
+        
+        -- Kiểm tra ngày hết hạn
+        IF @expireDate IS NOT NULL AND @expireDate <= @CurrentExpireDate
+        BEGIN
+            RAISERROR('Ngày hết hạn phải sau ngày đăng.', 16, 1);
+            RETURN;
+        END
+        
+        -- Cập nhật thông tin công việc
+        UPDATE JOB
+        SET 
+            JobType = ISNULL(@JobType, JobType),
+            ContractType = ISNULL(@ContractType, ContractType),
+            Level = ISNULL(@Level, Level),
+            Quantity = ISNULL(@Quantity, Quantity),
+            SalaryFrom = ISNULL(@SalaryFrom, SalaryFrom),
+            SalaryTo = ISNULL(@SalaryTo, SalaryTo),
+            RequireExpYear = ISNULL(@RequireExpYear, RequireExpYear),
+            Location = ISNULL(@Location, Location),
+            JD = ISNULL(@JD, JD),
+            JobName = ISNULL(@JobName, JobName),
+            expireDate = ISNULL(@expireDate, expireDate),
+            JobStatus = ISNULL(@JobStatus, JobStatus)
+        WHERE JobID = @JobID;
+        
+        PRINT 'Cập nhật thông tin công việc thành công.';
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
+        DECLARE @ErrorState INT = ERROR_STATE();
+        
+        RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH
+END;
+GO
+
+-- Thủ tục để xóa công việc
+CREATE OR ALTER PROCEDURE DeleteJob
+    @JobID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    BEGIN TRY
+        -- Kiểm tra công việc có tồn tại không
+        IF NOT EXISTS (SELECT 1 FROM JOB WHERE JobID = @JobID)
+        BEGIN
+            RAISERROR('Công việc với ID %d không tồn tại.', 16, 1, @JobID);
+            RETURN;
+        END
+        
+        -- Xóa các đơn ứng tuyển liên quan đến công việc này
+        DELETE FROM APPLY WHERE JobID = @JobID;
+        
+        -- Xóa các thông báo liên quan đến công việc này
+        DELETE FROM NOTIFICATION WHERE JobID = @JobID;
+        
+        -- Kiểm tra có mối quan hệ với danh mục công việc
+        IF EXISTS (SELECT 1 FROM [IN] WHERE JobID = @JobID)
+        BEGIN
+            -- Xóa các liên kết với danh mục công việc
+            DELETE FROM [IN] WHERE JobID = @JobID;
+        END
+        
+        -- Xóa công việc
+        DELETE FROM JOB WHERE JobID = @JobID;
+        
+        PRINT 'Xóa công việc thành công.';
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
+        DECLARE @ErrorState INT = ERROR_STATE();
+        
+        RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH
+END;
+GO
+
+-- Thủ tục để ứng viên nộp đơn ứng tuyển
+CREATE OR ALTER PROCEDURE InsertApplication
+    @CandidateID INT,
+    @JobID INT,
+    @CoverLetter NVARCHAR(MAX) = NULL,
+    @UploadCV NVARCHAR(255) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    BEGIN TRY
+        -- Kiểm tra ứng viên có tồn tại không
+        IF NOT EXISTS (SELECT 1 FROM CANDIDATE WHERE CandidateID = @CandidateID)
+        BEGIN
+            RAISERROR('Ứng viên với ID %d không tồn tại.', 16, 1, @CandidateID);
+            RETURN;
+        END
+        
+        -- Kiểm tra công việc có tồn tại không
+        IF NOT EXISTS (SELECT 1 FROM JOB WHERE JobID = @JobID)
+        BEGIN
+            RAISERROR('Công việc với ID %d không tồn tại.', 16, 1, @JobID);
+            RETURN;
+        END
+        
+        -- Kiểm tra công việc còn hạn tuyển dụng không
+        DECLARE @JobExpireDate DATETIME2;
+        DECLARE @JobStatus NVARCHAR(50);
+        
+        SELECT 
+            @JobExpireDate = expireDate,
+            @JobStatus = JobStatus
+        FROM JOB
+        WHERE JobID = @JobID;
+        
+        IF @JobExpireDate < GETDATE()
+        BEGIN
+            RAISERROR('Công việc đã hết hạn tuyển dụng.', 16, 1);
+            RETURN;
+        END
+        
+        IF @JobStatus <> 'Active'
+        BEGIN
+            RAISERROR('Công việc không còn hoạt động.', 16, 1);
+            RETURN;
+        END
+        
+        -- Kiểm tra ứng viên đã nộp đơn cho công việc này chưa
+        IF EXISTS (SELECT 1 FROM APPLY WHERE CandidateID = @CandidateID AND JobID = @JobID)
+        BEGIN
+            RAISERROR('Ứng viên đã nộp đơn cho công việc này.', 16, 1);
+            RETURN;
+        END
+        
+        -- Kiểm tra có CV đính kèm không
+        IF @UploadCV IS NULL AND 
+           NOT EXISTS (SELECT 1 FROM WorkExperience WHERE CandidateID = @CandidateID AND savedCV IS NOT NULL)
+        BEGIN
+            RAISERROR('Ứng viên cần đính kèm CV hoặc có CV lưu trong hồ sơ.', 16, 1);
+            RETURN;
+        END
+        
+        -- Thêm đơn ứng tuyển
+        INSERT INTO APPLY (CandidateID, JobID, CoverLetter, Date, Status, UploadCV)
+        VALUES (@CandidateID, @JobID, @CoverLetter, GETDATE(), 'Đã nộp', @UploadCV);
+        
+        -- Tạo thông báo cho ứng viên
+        INSERT INTO NOTIFICATION (Content, Title, Time, CandidateID, JobID)
+        VALUES (
+            'Bạn đã nộp đơn ứng tuyển thành công cho vị trí này.',
+            'Đã nộp đơn ứng tuyển',
+            GETDATE(),
+            @CandidateID,
+            @JobID
+        );
+        
+        -- Tạo thông báo cho nhà tuyển dụng
+        DECLARE @EmployerID INT;
+        SELECT @EmployerID = EmployerID FROM JOB WHERE JobID = @JobID;
+        
+        INSERT INTO NOTIFICATION (Content, Title, Time, EmployerID, JobID)
+        VALUES (
+            'Có ứng viên mới nộp đơn ứng tuyển cho vị trí của bạn.',
+            'Đơn ứng tuyển mới',
+            GETDATE(),
+            @EmployerID,
+            @JobID
+        );
+        
+        PRINT 'Nộp đơn ứng tuyển thành công.';
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
+        DECLARE @ErrorState INT = ERROR_STATE();
+        
+        RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH
+END;
+GO

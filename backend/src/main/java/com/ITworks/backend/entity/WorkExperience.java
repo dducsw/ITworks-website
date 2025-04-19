@@ -1,85 +1,40 @@
 package com.ITworks.backend.entity;
 
 import jakarta.persistence.*;
-
+import lombok.Getter;
+import lombok.Setter;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "WorkExperience")
+@Getter
+@Setter
 public class WorkExperience {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "WorkID")
     private Integer workId;
 
-    @Column(nullable = false)
+    @Column(name = "CandidateID", nullable = false)
     private Integer candidateId;
 
-    @Column(nullable = false)
+    @Column(name = "savedCV", nullable = false)
     private String savedCV;
 
-    @Column(nullable = false)
+    @Column(name = "YearOfExperience", nullable = false)
     private Integer yearOfExperience;
 
     @ManyToOne
-    @JoinColumn(name = "CandidateID", insertable = false, updatable = false)
+    @JoinColumn(name = "CandidateID", updatable = false)
     private Candidate candidate;
 
-    
-
-    // Getters and Setters
-    public Integer getWorkId() {
-        return workId;
-    }
-
-    public void setWorkId(Integer workId) {
-        this.workId = workId;
-    }
-
-    public Integer getCandidateId() {
-        return candidateId;
-    }
-
-    public void setCandidateId(Integer candidateId) {
-        this.candidateId = candidateId;
-    }
-
-    public String getSavedCV() {
-        return savedCV;
-    }
-
-    public void setSavedCV(String savedCV) {
-        this.savedCV = savedCV;
-    }
-
-    public Integer getYearOfExperience() {
-        return yearOfExperience;
-    }
-
-    public void setYearOfExperience(Integer yearOfExperience) {
-        this.yearOfExperience = yearOfExperience;
-    }
-
-    public Candidate getCandidate() {
-        return candidate;
-    }
-
-    public void setCandidate(Candidate candidate) {
-        this.candidate = candidate;
-    }
-
-    // public Set<Certification> getCertifications() {
-    //     return certifications;
-    // }
-
-    // public void setCertifications(Set<Certification> certifications) {
-    //     this.certifications = certifications;
-    // }
-
-    // public Set<JobHistory> getJobHistories() {
-    //     return jobHistories;
-    // }
-
-    // public void setJobHistories(Set<JobHistory> jobHistories) {
-    //     this.jobHistories = jobHistories;
-    // }
+    @ManyToMany
+    @JoinTable(
+        name = "INCLUDE",
+        joinColumns = @JoinColumn(name = "WorkID"),
+        inverseJoinColumns = @JoinColumn(name = "SkillID")
+    )
+    private Set<Skill> skills = new HashSet<>();
 }

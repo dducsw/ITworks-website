@@ -2,70 +2,34 @@ package com.ITworks.backend.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Pattern;
+import lombok.Getter;
+import lombok.Setter;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Table(name = "EMPLOYER")
+@Getter
+@Setter
 public class Employer {
     
     @Id
+    @Column(name = "EmployerID")
     private Integer employerId;
     
     @OneToOne
-    @JoinColumn(name = "employerId")
+    @JoinColumn(name = "EmployerID")
     @MapsId
     private User user;
     
-    @Column(nullable = false, length = 13)
-    @Pattern(regexp = "[0-9]+", message = "Tax number must contain only digits")
+    @Column(name = "TaxNumber", nullable = false, length = 13)
+    @Pattern(regexp = "^[0-9]{10}|[0-9]{13}$", message = "Tax number must be either 10 or 13 digits")
     private String taxNumber;
     
     @ManyToOne
-    @JoinColumn(name = "taxNumber", referencedColumnName = "taxNumber", insertable = false, updatable = false)
+    @JoinColumn(name = "TaxNumber", referencedColumnName = "TaxNumber", insertable = false, updatable = false)
     private Company company;
     
     @OneToMany(mappedBy = "employer", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Job> jobs = new HashSet<>();
-    
-    // Getters and Setters
-    public Integer getEmployerId() {
-        return employerId;
-    }
-
-    public void setEmployerId(Integer employerId) {
-        this.employerId = employerId;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public String getTaxNumber() {
-        return taxNumber;
-    }
-
-    public void setTaxNumber(String taxNumber) {
-        this.taxNumber = taxNumber;
-    }
-
-    public Company getCompany() {
-        return company;
-    }
-
-    public void setCompany(Company company) {
-        this.company = company;
-    }
-
-    public Set<Job> getJobs() {
-        return jobs;
-    }
-
-    public void setJobs(Set<Job> jobs) {
-        this.jobs = jobs;
-    }
 }

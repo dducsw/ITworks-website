@@ -1,57 +1,28 @@
 package com.ITworks.backend.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Table(name = "[PACKAGE]")
+@Getter
+@Setter
 public class Package {
     
     @Id
-    @Column(name = "PackageName")
+    @Column(name = "PackageName", length = 100)
     private String packageName;
     
-    @Column(nullable = false, precision = 4, scale = 2)
+    @Column(name = "Cost", nullable = false, precision = 18, scale = 2)
     private BigDecimal cost;
     
-    @Column(nullable = false, columnDefinition = "nvarchar(max)")
+    @Column(name = "Description", nullable = false, columnDefinition = "nvarchar(max)")
     private String description;
     
-    @OneToMany(mappedBy = "packageName", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "subscriptionPackage", cascade = CascadeType.ALL)
     private Set<Company> companies = new HashSet<>();
-    
-    // Getters and Setters
-    public String getPackageName() {
-        return packageName;
-    }
-
-    public void setPackageName(String packageName) {
-        this.packageName = packageName;
-    }
-
-    public BigDecimal getCost() {
-        return cost;
-    }
-
-    public void setCost(BigDecimal cost) {
-        this.cost = cost;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Set<Company> getCompanies() {
-        return companies;
-    }
-
-    public void setCompanies(Set<Company> companies) {
-        this.companies = companies;
-    }
 }

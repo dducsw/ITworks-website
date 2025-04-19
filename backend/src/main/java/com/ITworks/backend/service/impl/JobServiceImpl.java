@@ -25,6 +25,8 @@ public class JobServiceImpl implements JobService {
 
     
 
+    
+
     @Autowired
     private JobRepository jobRepository;
     
@@ -43,7 +45,15 @@ public class JobServiceImpl implements JobService {
     public Optional<Job> findJobById(Integer id) {
         return jobRepository.findById(id);
     }
+    @Override
+    public List<Job> findJobsByStatus(String status) {
+        return jobRepository.findByJobStatus(status);
+    }
 
+    @Override
+    public List<Job> findJobsByEmployerIdAndStatus(Integer employerId, String status) {
+        return jobRepository.findByEmployerIdAndJobStatus(employerId, status);
+    }
     @Override
     @Transactional
     public Job saveJob(Job job) {
