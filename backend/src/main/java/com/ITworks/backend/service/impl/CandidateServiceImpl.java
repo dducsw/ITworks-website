@@ -107,9 +107,9 @@ public class CandidateServiceImpl implements CandidateService {
     }
 
     // @Override
-    // public List<Apply> getCandidateApplications(Integer candidateId) {
-    //     return applyRepository.findByCandidateId(candidateId);
-    // }
+    public List<Apply> getCandidateApplications(Integer candidateId) {
+        return applyRepository.findByCandidateId(candidateId);
+    }
 
     // @Override
     // public List<WorkExperience> getCandidateWorkExperiences(Integer candidateId) {
@@ -118,11 +118,11 @@ public class CandidateServiceImpl implements CandidateService {
 
     @Override
     public Optional<Candidate> findByUsername(String username) {
-        return candidateRepository.findByUsername(username);
+        return candidateRepository.findByUserUsername(username);
     }
 
     @Override
     public Optional<Candidate> findByEmail(String email) {
-        return candidateRepository.findByEmail(email);
+        return candidateRepository.findByUserEmail(email);
     }
 }

@@ -20,7 +20,7 @@ public interface CandidateService {
     Apply applyForJob(Integer candidateId, Integer jobId, String coverLetter, String uploadCv);
     void cancelApplication(Integer candidateId, Integer jobId);
 
-    // List<Apply> getCandidateApplications(Integer candidateId);
+    List<Apply> getCandidateApplications(Integer candidateId);
     
     
     // // Work experience related operations

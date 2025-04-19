@@ -2,8 +2,7 @@ package com.ITworks.backend.controller;
 
 import com.ITworks.backend.entity.Apply;
 import com.ITworks.backend.entity.Candidate;
-import com.ITworks.backend.entity.Job;
-import com.ITworks.backend.entity.WorkExperience;
+
 
 import com.ITworks.backend.service.CandidateService;
 
@@ -13,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
+
 
 @RestController
 @RequestMapping("/api/candidates")
@@ -80,14 +79,6 @@ public class CandidateController {
     // }
     
     // Job related endpoints
-    
-    
-
-    
-    @GetMapping("/{candidateId}/work-experiences")
-    public ResponseEntity<List<WorkExperience>> getCandidateWorkExperiences(@PathVariable Integer candidateId) {
-        return ResponseEntity.ok(candidateService.getCandidateWorkExperiences(candidateId));
-    }
     
     
 }

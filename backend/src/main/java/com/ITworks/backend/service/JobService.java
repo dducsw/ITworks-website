@@ -1,5 +1,6 @@
 package com.ITworks.backend.service;
 
+import com.ITworks.backend.dto.Job.JobCreateDTO;
 import com.ITworks.backend.entity.Job;
 import java.util.List;
 import java.util.Optional;
@@ -15,4 +16,6 @@ public interface JobService {
     List<Job> searchJobs(String keyword);
     List<Job> findActiveJobs();
     List<Job> findJobsByCategory(String categoryName);
+
+    Job createJob(JobCreateDTO jobCreateDTO);
 }

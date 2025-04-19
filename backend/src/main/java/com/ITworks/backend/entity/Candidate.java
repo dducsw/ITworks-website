@@ -12,7 +12,7 @@ public class Candidate {
     private Integer candidateId;
     
     @OneToOne
-    @JoinColumn(name = "candidateId")
+    @JoinColumn(name = "CandidateId")
     @MapsId
     private User user;
     

@@ -1,15 +1,17 @@
 package com.ITworks.backend.controller;
 
+import com.ITworks.backend.dto.Login.*;
 import com.ITworks.backend.entity.User;
 import com.ITworks.backend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -35,25 +37,14 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestParam String username, @RequestParam String password) {
-        Optional<User> userOptional = userService.findByUsername(username);
-
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.badRequest().body("Invalid username or password!");
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
+        try {
+            LoginResponseDTO response = userService.login(loginRequest);
+            return ResponseEntity.ok(response);
+        } catch (BadCredentialsException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
         }
-
-        User user = userOptional.get();
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            return ResponseEntity.badRequest().body("Invalid username or password!");
-        }
-
-        // Return user data (excluding password) or token instead of just a message
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", user.getId());
-        response.put("username", user.getUsername());
-        response.put("email", user.getEmail());
-        // Add more relevant user data
-
-        return ResponseEntity.ok(response);
     }
 }

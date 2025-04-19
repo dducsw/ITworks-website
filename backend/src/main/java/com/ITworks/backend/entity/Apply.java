@@ -20,16 +20,16 @@ public class Apply {
     @JoinColumn(name = "JobID")
     private Job job;
     
-    @Column(columnDefinition = "nvarchar(max)")
+    @Column(name = "CoverLetter", columnDefinition = "nvarchar(max)")
     private String coverLetter;
     
-    @Column(nullable = false)
+    @Column(name = "Date", nullable = false)
     private LocalDateTime date = LocalDateTime.now();
     
-    @Column(length = 50)
+    @Column(name = "Status", length = 50)
     private String status;
     
-    @Column
+    @Column(name = "UploadCV")
     private String uploadCV;
     
     // Embedded ID class

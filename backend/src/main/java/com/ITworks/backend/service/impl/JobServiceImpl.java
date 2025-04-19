@@ -5,6 +5,7 @@ import com.ITworks.backend.repository.JobRepository;
 import com.ITworks.backend.repository.EmployerRepository;
 import com.ITworks.backend.repository.CompanyRepository;
 // import com.ITworks.backend.repository.ApplyRepository;
+import com.ITworks.backend.dto.Job.JobCreateDTO;
 
 
 import com.ITworks.backend.service.JobService;
@@ -21,6 +22,8 @@ import java.util.regex.Pattern;
 
 @Service
 public class JobServiceImpl implements JobService {
+
+    
 
     @Autowired
     private JobRepository jobRepository;
@@ -54,7 +57,36 @@ public class JobServiceImpl implements JobService {
         
         return jobRepository.save(job);
     }
+    
+    @Override
+    @Transactional
+    public Job createJob(JobCreateDTO jobCreateDTO) {
+        // Convert JobCreateDTO to Job entity
+        Job job = new Job();
+        job.setJobName(jobCreateDTO.getJobName());
+        job.setJobType(jobCreateDTO.getJobType());
+        job.setContractType(jobCreateDTO.getContractType());
+        job.setLevel(jobCreateDTO.getLevel());
+        job.setQuantity(jobCreateDTO.getQuantity());
+        job.setSalaryFrom(jobCreateDTO.getSalaryFrom());
+        job.setSalaryTo(jobCreateDTO.getSalaryTo());
+        job.setRequireExpYear(jobCreateDTO.getRequireExpYear());
+        job.setLocation(jobCreateDTO.getLocation());
+        job.setJobDescription(jobCreateDTO.getJobDescription());
+        job.setExpireDate(jobCreateDTO.getExpireDate());
+        job.setJobStatus(jobCreateDTO.getJobStatus());
+        job.setEmployerId(jobCreateDTO.getEmployerId());
+        job.setTaxNumber(jobCreateDTO.getTaxNumber());
 
+        // Validate job data
+        validateJobData(job);
+
+        // Set current datetime as post date
+        job.setPostDate(LocalDateTime.now());
+
+        // Save and return the job
+        return jobRepository.save(job);
+    }
     @Override
     @Transactional
     public Job updateJob(Integer id, Job jobDetails) {

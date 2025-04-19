@@ -10,17 +10,19 @@ import java.time.LocalDateTime;
 public class User {
     
     @Id
+    @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     
-    @Column(unique = true, nullable = false, length = 50)
+    @Column(name = "Username", unique = true, nullable = false, length = 50)
     private String username;
     
-    @Column(unique = true, nullable = false)
+    @Column(name = "Email", unique = true, nullable = false)
     @Email(message = "Email should be valid")
+    @Pattern(regexp = ".*@.*\\..*", message = "Email must be in valid format")
     private String email;
     
-    @Column(nullable = false)
+    @Column(name = "Password", nullable = false)
     @Size(min = 6, message = "Password must be at least 6 characters long")
     private String password;
     
@@ -36,17 +38,17 @@ public class User {
     @Column(name = "Profile_Picture", nullable = false)
     private String profilePicture;
     
-    @Column(nullable = false)
+    @Column(name = "Address", nullable = false)
     private String address;
     
-    @Column(nullable = false)
+    @Column(name = "BDate", nullable = false)
     @Past(message = "Birth date must be in the past")
     private LocalDate bDate;
     
-    @Column(nullable = false, columnDefinition = "nvarchar(max)")
+    @Column(name = "Bio", nullable = false, columnDefinition = "nvarchar(max)")
     private String bio;
     
-    @Column(nullable = false, length = 20)
+    @Column(name = "PhoneNum", nullable = false, length = 20)
     @Pattern(regexp = "0[0-9]*", message = "Phone number must start with 0 and contain only digits")
     private String phoneNum;
     
