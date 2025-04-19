@@ -12,58 +12,60 @@ public class Job {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "JobID")
     private Integer jobId;
     
-    @Column(nullable = false, length = 50)
+    @Column(name = "JobType", nullable = false, length = 50)
     private String jobType;
     
-    @Column(nullable = false, length = 50)
+    @Column(name = "ContractType", nullable = false, length = 50)
     private String contractType;
     
-    @Column(nullable = false, length = 50)
+    @Column(name = "Level", nullable = false, length = 50)
     private String level;
     
-    @Column(nullable = false)
+    @Column(name = "Quantity", nullable = false)
     private Integer quantity;
     
-    @Column(nullable = false, precision = 18, scale = 2)
+    @Column(name = "SalaryFrom", nullable = false, precision = 18, scale = 2)
     private BigDecimal salaryFrom;
     
-    @Column(nullable = false, precision = 18, scale = 2)
+    @Column(name = "SalaryTo", nullable = false, precision = 18, scale = 2)
     private BigDecimal salaryTo;
     
+    @Column(name = "RequireExpYear")
     private Integer requireExpYear;
     
-    @Column(nullable = false, length = 100)
+    @Column(name = "Location", nullable = false, length = 100)
     private String location;
     
-    @Column(nullable = false, name = "JD", columnDefinition = "nvarchar(max)")
+    @Column(name = "JD", nullable = false, columnDefinition = "nvarchar(max)")
     private String jobDescription;
     
-    @Column(nullable = false, length = 100)
+    @Column(name = "JobName", nullable = false, length = 100)
     private String jobName;
     
-    @Column
+    @Column(name = "postDate")
     private LocalDateTime postDate = LocalDateTime.now();
     
-    @Column(nullable = false)
+    @Column(name = "expireDate", nullable = false)
     private LocalDateTime expireDate;
     
-    @Column(nullable = false, length = 50)
+    @Column(name = "JobStatus", nullable = false, length = 50)
     private String jobStatus;
     
-    @Column(nullable = false)
+    @Column(name = "EmployerID", nullable = false)
     private Integer employerId;
     
-    @Column(nullable = false, length = 13)
+    @Column(name = "TaxNumber", nullable = false, length = 13)
     private String taxNumber;
     
     @ManyToOne
-    @JoinColumn(name = "employerId", referencedColumnName = "employerId", insertable = false, updatable = false)
+    @JoinColumn(name = "EmployerID", referencedColumnName = "employerId", insertable = false, updatable = false)
     private Employer employer;
     
     @ManyToOne
-    @JoinColumn(name = "taxNumber", referencedColumnName = "taxNumber", insertable = false, updatable = false)
+    @JoinColumn(name = "TaxNumber", referencedColumnName = "taxNumber", insertable = false, updatable = false)
     private Company company;
     
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL)

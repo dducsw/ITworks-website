@@ -44,6 +44,11 @@ public class User {
     @Column(name = "BDate", nullable = false)
     @Past(message = "Birth date must be in the past")
     private LocalDate bDate;
+
+    @AssertTrue(message = "User must be at least 18 years old")
+    private boolean isAdult() {
+        return bDate != null && bDate.plusYears(18).isBefore(LocalDate.now());
+    }
     
     @Column(name = "Bio", nullable = false, columnDefinition = "nvarchar(max)")
     private String bio;

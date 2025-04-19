@@ -24,4 +24,7 @@ public interface JobRepository extends JpaRepository<Job, Integer> {
     
     @Query("SELECT j FROM Job j JOIN j.requiredSkills s WHERE s.skillName = :skillName")
     List<Job> findByRequiredSkill(String skillName);
+    
+    List<Job> findByJobStatus(String status);
+    List<Job> findByEmployerIdAndJobStatus(Integer employerId, String status);
 }

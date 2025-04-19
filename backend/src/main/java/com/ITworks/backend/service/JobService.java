@@ -12,10 +12,12 @@ public interface JobService {
     Job updateJob(Integer id, Job jobDetails);
     void deleteJob(Integer id);
     List<Job> findJobsByEmployerId(Integer employerId);
-    List<Job> findJobsByCompany(Integer TaxNumber);
+    List<Job> findJobsByCompany(String taxNumber);
     List<Job> searchJobs(String keyword);
     List<Job> findActiveJobs();
     List<Job> findJobsByCategory(String categoryName);
 
     Job createJob(JobCreateDTO jobCreateDTO);
+    List<Job> findJobsByStatus(String status);
+    List<Job> findJobsByEmployerIdAndStatus(Integer employerId, String status);
 }

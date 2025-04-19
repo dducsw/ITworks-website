@@ -85,14 +85,14 @@ public class UserServiceImpl implements UserService {
                 throw new BadCredentialsException("Tài khoản này không phải là ứng viên");
             }
             response.setUserType("CANDIDATE");
-            response.setTypeId(candidate.get().getCandidateId());
+            response.setTypeId(user.getId()); // CandidateID = UserID
         } else if (loginRequest.getUserType() == LoginRequestDTO.UserType.EMPLOYER) {
             Optional<Employer> employer = employerRepository.findById(user.getId());
             if (employer.isEmpty()) {
                 throw new BadCredentialsException("Tài khoản này không phải là nhà tuyển dụng");
             }
             response.setUserType("EMPLOYER");
-            response.setTypeId(employer.get().getEmployerId());
+            response.setTypeId(user.getId()); // EmployerID = UserID
         }
         
         return response;

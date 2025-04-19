@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import com.ITworks.backend.dto.Job.JobCreateDTO;
 import com.ITworks.backend.dto.Job.JobResponseDTO;
 import com.ITworks.backend.dto.Job.JobUpdateDTO;
@@ -114,5 +115,34 @@ public class JobController {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("message", "Lỗi khi xóa công việc: " + e.getMessage()));
         }
+    }
+
+    @GetMapping("/employer/{employerId}")
+    public ResponseEntity<List<JobResponseDTO>> getJobsByEmployer(@PathVariable Integer employerId) {
+        List<Job> jobs = jobService.findJobsByEmployerId(employerId);
+        List<JobResponseDTO> jobDTOs = jobs.stream()
+            .map(job -> new JobResponseDTO(job))
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(jobDTOs);
+    }
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<JobResponseDTO>> getJobsByStatus(
+            @PathVariable String status,
+            @RequestParam(required = false) Integer employerId) {
+        
+        List<Job> jobs;
+        if (employerId != null) {
+            // Lấy công việc theo employerId và status
+            jobs = jobService.findJobsByEmployerIdAndStatus(employerId, status);
+        } else {
+            // Lấy tất cả công việc theo status
+            jobs = jobService.findJobsByStatus(status);
+        }
+        
+        List<JobResponseDTO> jobDTOs = jobs.stream()
+            .map(job -> new JobResponseDTO(job))
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(jobDTOs);
     }
 }

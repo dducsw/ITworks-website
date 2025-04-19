@@ -22,13 +22,21 @@ public class JobCreateDTO {
     private Integer quantity;
     
     @NotNull(message = "Mức lương tối thiểu không được để trống")
-    @Min(value = 0, message = "Mức lương không được âm")
+    @DecimalMin(value = "0.0", inclusive = true, message = "Mức lương không được âm")
     private BigDecimal salaryFrom;
     
     @NotNull(message = "Mức lương tối đa không được để trống")
     private BigDecimal salaryTo;
     
     private Integer requireExpYear;
+
+    public Integer getRequireExpYear() {
+        return requireExpYear;
+    }
+
+    public void setRequireExpYear(Integer requireExpYear) {
+        this.requireExpYear = requireExpYear;
+    }
     
     @NotBlank(message = "Địa điểm làm việc không được để trống")
     private String location;
@@ -51,5 +59,107 @@ public class JobCreateDTO {
     private String taxNumber;
     
     // Getters and Setters
-    // ...
+    public String getJobName() {
+        return jobName;
+    }
+
+    public void setJobName(String jobName) {
+        this.jobName = jobName;
+    }
+
+    public String getJobType() {
+        return jobType;
+    }
+
+    public void setJobType(String jobType) {
+        this.jobType = jobType;
+    }
+
+    public String getContractType() {
+        return contractType;
+    }
+
+    public void setContractType(String contractType) {
+        this.contractType = contractType;
+    }
+
+    public String getLevel() {
+        return level;
+    }
+
+    public void setLevel(String level) {
+        this.level = level;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
+    }
+
+    public BigDecimal getSalaryFrom() {
+        return salaryFrom;
+    }
+
+    public void setSalaryFrom(BigDecimal salaryFrom) {
+        this.salaryFrom = salaryFrom;
+    }
+
+    public BigDecimal getSalaryTo() {
+        return salaryTo;
+    }
+
+    public void setSalaryTo(BigDecimal salaryTo) {
+        this.salaryTo = salaryTo;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public String getJobDescription() {
+        return jobDescription;
+    }
+
+    public void setJobDescription(String jobDescription) {
+        this.jobDescription = jobDescription;
+    }
+
+    public LocalDateTime getExpireDate() {
+        return expireDate;
+    }
+
+    public void setExpireDate(LocalDateTime expireDate) {
+        this.expireDate = expireDate;
+    }
+
+    public String getJobStatus() {
+        return jobStatus;
+    }
+
+    public void setJobStatus(String jobStatus) {
+        this.jobStatus = jobStatus;
+    }
+
+    public Integer getEmployerId() {
+        return employerId;
+    }
+
+    public void setEmployerId(Integer employerId) {
+        this.employerId = employerId;
+    }
+
+    public String getTaxNumber() {
+        return taxNumber;
+    }
+
+    public void setTaxNumber(String taxNumber) {
+        this.taxNumber = taxNumber;
+    }
 }

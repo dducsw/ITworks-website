@@ -157,8 +157,8 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
-    public List<Job> findJobsByCompany(Integer taxNumber) {
-        return jobRepository.findByTaxNumber(taxNumber.toString());
+    public List<Job> findJobsByCompany(String taxNumber) {
+        return jobRepository.findByTaxNumber(taxNumber);
     }
 
     @Override

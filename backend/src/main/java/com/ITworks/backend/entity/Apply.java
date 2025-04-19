@@ -1,6 +1,7 @@
 package com.ITworks.backend.entity;
 
 import jakarta.persistence.*;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
@@ -10,13 +11,13 @@ public class Apply {
     @EmbeddedId
     private ApplyId id;
     
-    @ManyToOne
     @MapsId("candidateId")
+    @ManyToOne
     @JoinColumn(name = "CandidateID")
     private Candidate candidate;
     
-    @ManyToOne
     @MapsId("jobId")
+    @ManyToOne
     @JoinColumn(name = "JobID")
     private Job job;
     
@@ -34,9 +35,7 @@ public class Apply {
     
     // Embedded ID class
     @Embeddable
-    public static class ApplyId implements java.io.Serializable {
-        private static final long serialVersionUID = 1L;
-        
+    public static class ApplyId implements Serializable {
         @Column(name = "CandidateID")
         private Integer candidateId;
         

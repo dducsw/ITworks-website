@@ -22,4 +22,9 @@ public interface ApplyRepository extends JpaRepository<Apply, ApplyId> {
     
     @Query("SELECT a FROM Apply a WHERE a.id.candidateId = :candidateId AND a.id.jobId = :jobId")
     Optional<Apply> findByCandidateIdAndJobId(@Param("candidateId") Integer candidateId, @Param("jobId") Integer jobId);
+    
+    boolean existsByIdJobId(Integer jobId);
+    
+    @Query("SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END FROM Apply a WHERE a.id.candidateId = :candidateId AND a.id.jobId = :jobId")
+    boolean existsByCandidateIdAndJobId(@Param("candidateId") Integer candidateId, @Param("jobId") Integer jobId);
 }
