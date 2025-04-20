@@ -6,10 +6,9 @@ import com.ITworks.backend.entity.Job;
 
 // import com.ITworks.backend.entity.WorkExperience;
 import com.ITworks.backend.entity.Apply.ApplyId;
-import com.ITworks.backend.repository.ApplyRepository;
-import com.ITworks.backend.repository.CandidateRepository;
-import com.ITworks.backend.repository.JobRepository;
-
+import com.ITworks.backend.repositories.ApplyRepository;
+import com.ITworks.backend.repositories.CandidateRepository;
+import com.ITworks.backend.repositories.JobRepository;
 // import com.ITworks.backend.repository.WorkExperienceRepository;
 import com.ITworks.backend.service.CandidateService;
 

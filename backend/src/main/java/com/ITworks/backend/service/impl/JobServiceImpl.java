@@ -1,9 +1,9 @@
 package com.ITworks.backend.service.impl;
 
 import com.ITworks.backend.entity.Job;
-import com.ITworks.backend.repository.JobRepository;
-import com.ITworks.backend.repository.EmployerRepository;
-import com.ITworks.backend.repository.CompanyRepository;
+import com.ITworks.backend.repositories.CompanyRepository;
+import com.ITworks.backend.repositories.EmployerRepository;
+import com.ITworks.backend.repositories.JobRepository;
 // import com.ITworks.backend.repository.ApplyRepository;
 import com.ITworks.backend.dto.Job.JobCreateDTO;
 
@@ -22,10 +22,6 @@ import java.util.regex.Pattern;
 
 @Service
 public class JobServiceImpl implements JobService {
-
-    
-
-    
 
     @Autowired
     private JobRepository jobRepository;
@@ -247,8 +243,8 @@ public class JobServiceImpl implements JobService {
         }
         
         // Validate tax number format
-        if (!Pattern.matches("^[0-9].*$", taxNumber) || (taxNumber.length() != 10 && taxNumber.length() != 13)) {
-            throw new IllegalArgumentException("Tax number must start with a digit and be 10 or 13 characters long");
+        if (!Pattern.matches("^(\\d{10}|\\d{13})$", taxNumber)) {
+            throw new IllegalArgumentException("Tax number must be 10 hoặc 13 chữ số");
         }
         
         // // Check employer belongs to the company
@@ -280,13 +276,13 @@ public class JobServiceImpl implements JobService {
     }
     
     private void validateNonNegativeExperience(Integer years) {
-        if (years < 0) {
+        if (years != null && years < 0) {
             throw new IllegalArgumentException("Experience years cannot be negative");
         }
     }
     
     private void validateFutureDate(LocalDateTime date, LocalDateTime referenceDate) {
-        if (date.isBefore(referenceDate) || date.isEqual(referenceDate)) {
+        if (!date.isAfter(referenceDate)) {
             throw new IllegalArgumentException("Expire date must be after post date");
         }
     }

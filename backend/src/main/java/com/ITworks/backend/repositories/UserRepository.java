@@ -1,4 +1,4 @@
-package com.ITworks.backend.repository;
+package com.ITworks.backend.repositories;
 
 import com.ITworks.backend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;

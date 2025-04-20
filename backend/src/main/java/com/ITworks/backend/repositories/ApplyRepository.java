@@ -1,4 +1,4 @@
-package com.ITworks.backend.repository;
+package com.ITworks.backend.repositories;
 
 import com.ITworks.backend.entity.Apply;
 import com.ITworks.backend.entity.Apply.ApplyId;

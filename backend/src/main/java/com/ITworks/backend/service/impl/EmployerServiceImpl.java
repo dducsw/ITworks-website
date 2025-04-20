@@ -3,11 +3,9 @@ package com.ITworks.backend.service.impl;
 import com.ITworks.backend.entity.Apply;
 import com.ITworks.backend.entity.Employer;
 import com.ITworks.backend.entity.Job;
-
-import com.ITworks.backend.repository.ApplyRepository;
-import com.ITworks.backend.repository.EmployerRepository;
-import com.ITworks.backend.repository.JobRepository;
-
+import com.ITworks.backend.repositories.ApplyRepository;
+import com.ITworks.backend.repositories.EmployerRepository;
+import com.ITworks.backend.repositories.JobRepository;
 import com.ITworks.backend.service.EmployerService;
 
 import org.springframework.beans.factory.annotation.Autowired;

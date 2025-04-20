@@ -50,6 +50,6 @@ public class JobCreateDTO {
     private Integer employerId;
 
     @NotBlank(message = "Mã số thuế không được để trống")
-    @Pattern(regexp = "^[0-9]{10}|[0-9]{13}$", message = "Mã số thuế phải có 10 hoặc 13 chữ số")
+    @Pattern(regexp = "^(?:[0-9]{10}|[0-9]{13})$", message = "Mã số thuế phải có 10 hoặc 13 chữ số")
     private String taxNumber;
 }

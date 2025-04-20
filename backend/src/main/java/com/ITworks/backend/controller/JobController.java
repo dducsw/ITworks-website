@@ -1,51 +1,94 @@
 package com.ITworks.backend.controller;
 
+import com.ITworks.backend.dto.Job.JobCreateDTO;
+import com.ITworks.backend.dto.Job.JobResponseDTO;
+import com.ITworks.backend.dto.Job.JobUpdateDTO;
+import com.ITworks.backend.dto.ResponseModel;
 import com.ITworks.backend.entity.Job;
 import com.ITworks.backend.service.JobService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
-import com.ITworks.backend.dto.Job.JobCreateDTO;
-import com.ITworks.backend.dto.Job.JobResponseDTO;
-import com.ITworks.backend.dto.Job.JobUpdateDTO;
 
 @RestController
 @RequestMapping("/api/jobs")
 public class JobController {
 
-    @Autowired
-    private JobService jobService;
+    private final JobService jobService;
+
+    public JobController(JobService jobService) {
+        this.jobService = jobService;
+    }
 
     @GetMapping
-    public ResponseEntity<List<Job>> getAllJobs() {
-        return ResponseEntity.ok(jobService.findAllJobs());
+    public ResponseEntity<?> getAllJobs() {
+        try {
+            List<Job> jobs = jobService.findAllJobs();
+            return ResponseEntity.status(HttpStatus.OK).body(new ResponseModel(
+                    200,
+                    jobs,
+                    "Retrieved all jobs successfully"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(
+                    500,
+                    null,
+                    e.getMessage()
+            ));
+        }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Job> getJobById(@PathVariable Integer id) {
-        return jobService.findJobById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> getJobById(@PathVariable Integer id) {
+        try {
+            return jobService.findJobById(id)
+                    .map(job -> ResponseEntity.status(HttpStatus.OK).body(new ResponseModel(
+                            200,
+                            job,
+                            "Job retrieved successfully"
+                    )))
+                    .orElse(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseModel(
+                            400,
+                            null,
+                            "Job not found with id: " + id
+                    )));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(
+                    500,
+                    null,
+                    e.getMessage()
+            ));
+        }
     }
 
     @PostMapping
-    public ResponseEntity<JobResponseDTO> createJob(@Valid @RequestBody JobCreateDTO jobCreateDTO) {
-        Job job = jobService.createJob(jobCreateDTO);
-        JobResponseDTO responseDTO = new JobResponseDTO(job);
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+    public ResponseEntity<?> createJob(@Valid @RequestBody JobCreateDTO jobCreateDTO) {
+        try {
+            Job job = jobService.createJob(jobCreateDTO);
+            JobResponseDTO responseDTO = new JobResponseDTO(job);
+            return ResponseEntity.status(HttpStatus.CREATED).body(new ResponseModel(
+                    201,
+                    responseDTO,
+                    "Job created successfully"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseModel(
+                    400,
+                    null,
+                    e.getMessage()
+            ));
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<JobResponseDTO> updateJob(@PathVariable Integer id, 
-                                                   @Valid @RequestBody JobUpdateDTO jobUpdateDTO) {
+    public ResponseEntity<?> updateJob(@PathVariable Integer id, 
+                                      @Valid @RequestBody JobUpdateDTO jobUpdateDTO) {
         try {
-            // Convert DTO to entity
+            // Find existing job
             Job existingJob = jobService.findJobById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Job with ID " + id + " not found"));
             
@@ -87,9 +130,24 @@ public class JobController {
             // Save updated job
             Job updatedJob = jobService.updateJob(id, existingJob);
             JobResponseDTO responseDTO = new JobResponseDTO(updatedJob);
-            return ResponseEntity.ok(responseDTO);
+            
+            return ResponseEntity.status(HttpStatus.OK).body(new ResponseModel(
+                    200,
+                    responseDTO,
+                    "Job updated successfully"
+            ));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseModel(
+                    400,
+                    null,
+                    e.getMessage()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(
+                    500,
+                    null,
+                    e.getMessage()
+            ));
         }
     }
     
@@ -98,51 +156,89 @@ public class JobController {
         try {
             // Check if job exists
             if (!jobService.findJobById(id).isPresent()) {
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseModel(
+                        400,
+                        null,
+                        "Job not found with id: " + id
+                ));
             }
             
             // Delete job
             jobService.deleteJob(id);
-            return ResponseEntity.ok().body(Map.of("message", "Xóa công việc thành công"));
+            return ResponseEntity.status(HttpStatus.OK).body(new ResponseModel(
+                    200,
+                    null,
+                    "Job deleted successfully"
+            ));
         } catch (Exception e) {
             // Handle delete error - e.g., foreign key constraint violations
             if (e.getMessage().contains("foreign key constraint")) {
-                return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .body(Map.of("message", "Không thể xóa công việc này vì đã có ứng viên ứng tuyển"));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseModel(
+                        400,
+                        null,
+                        "Cannot delete this job because candidates have already applied"
+                ));
             }
-            return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("message", "Lỗi khi xóa công việc: " + e.getMessage()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(
+                    500,
+                    null,
+                    "Error deleting job: " + e.getMessage()
+            ));
         }
     }
 
     @GetMapping("/employer/{employerId}")
-    public ResponseEntity<List<JobResponseDTO>> getJobsByEmployer(@PathVariable Integer employerId) {
-        List<Job> jobs = jobService.findJobsByEmployerId(employerId);
-        List<JobResponseDTO> jobDTOs = jobs.stream()
-            .map(job -> new JobResponseDTO(job))
-            .collect(Collectors.toList());
-        return ResponseEntity.ok(jobDTOs);
+    public ResponseEntity<?> getJobsByEmployer(@PathVariable Integer employerId) {
+        try {
+            List<Job> jobs = jobService.findJobsByEmployerId(employerId);
+            List<JobResponseDTO> jobDTOs = jobs.stream()
+                .map(job -> new JobResponseDTO(job))
+                .collect(Collectors.toList());
+                
+            return ResponseEntity.status(HttpStatus.OK).body(new ResponseModel(
+                    200,
+                    jobDTOs,
+                    "Employer jobs retrieved successfully"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(
+                    500,
+                    null,
+                    e.getMessage()
+            ));
+        }
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<JobResponseDTO>> getJobsByStatus(
+    public ResponseEntity<?> getJobsByStatus(
             @PathVariable String status,
             @RequestParam(required = false) Integer employerId) {
         
-        List<Job> jobs;
-        if (employerId != null) {
-            // Lấy công việc theo employerId và status
-            jobs = jobService.findJobsByEmployerIdAndStatus(employerId, status);
-        } else {
-            // Lấy tất cả công việc theo status
-            jobs = jobService.findJobsByStatus(status);
+        try {
+            List<Job> jobs;
+            if (employerId != null) {
+                // Get jobs by employerId and status
+                jobs = jobService.findJobsByEmployerIdAndStatus(employerId, status);
+            } else {
+                // Get all jobs by status
+                jobs = jobService.findJobsByStatus(status);
+            }
+            
+            List<JobResponseDTO> jobDTOs = jobs.stream()
+                .map(job -> new JobResponseDTO(job))
+                .collect(Collectors.toList());
+                
+            return ResponseEntity.status(HttpStatus.OK).body(new ResponseModel(
+                    200,
+                    jobDTOs,
+                    "Jobs with status '" + status + "' retrieved successfully"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(
+                    500,
+                    null,
+                    e.getMessage()
+            ));
         }
-        
-        List<JobResponseDTO> jobDTOs = jobs.stream()
-            .map(job -> new JobResponseDTO(job))
-            .collect(Collectors.toList());
-        return ResponseEntity.ok(jobDTOs);
     }
 }
