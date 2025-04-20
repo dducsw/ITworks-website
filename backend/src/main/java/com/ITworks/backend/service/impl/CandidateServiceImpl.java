@@ -110,10 +110,6 @@ public class CandidateServiceImpl implements CandidateService {
         return applyRepository.findByCandidateId(candidateId);
     }
 
-    // @Override
-    // public List<WorkExperience> getCandidateWorkExperiences(Integer candidateId) {
-    //     return workExperienceRepository.findByCandidateId(candidateId);
-    // }
 
     @Override
     public Optional<Candidate> findByUsername(String username) {

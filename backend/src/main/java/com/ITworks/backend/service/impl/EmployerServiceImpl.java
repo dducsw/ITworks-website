@@ -3,13 +3,17 @@ package com.ITworks.backend.service.impl;
 import com.ITworks.backend.entity.Apply;
 import com.ITworks.backend.entity.Employer;
 import com.ITworks.backend.entity.Job;
+import com.ITworks.backend.mapper.JobMapper;
 import com.ITworks.backend.repositories.ApplyRepository;
 import com.ITworks.backend.repositories.EmployerRepository;
 import com.ITworks.backend.repositories.JobRepository;
 import com.ITworks.backend.service.EmployerService;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.ITworks.backend.dto.Job.JobDTO; // Import JobDTO
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -17,7 +21,12 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class EmployerServiceImpl implements EmployerService {
+
+
+    @Autowired
+    private final JobMapper jobMapper;
 
     @Autowired
     private EmployerRepository employerRepository;
@@ -40,17 +49,17 @@ public class EmployerServiceImpl implements EmployerService {
     }
 
     @Override
-    public List<Job> getEmployerJobs(Integer employerId) {
+    public List<JobDTO> getEmployerJobs(Integer employerId) {
         // Verify employer exists
         if (!employerRepository.existsById(employerId)) {
             throw new IllegalArgumentException("Employer with ID " + employerId + " not found");
         }
         
-        return jobRepository.findByEmployerId(employerId);
+        return jobMapper.toJobDTOList(jobRepository.findByEmployerId(employerId));
     }
 
     @Override
-    public List<Job> getEmployerJobsByStatus(Integer employerId, String status) {
+    public List<JobDTO> getEmployerJobsByStatus(Integer employerId, String status) {
         // Verify employer exists
         if (!employerRepository.existsById(employerId)) {
             throw new IllegalArgumentException("Employer with ID " + employerId + " not found");
@@ -58,9 +67,9 @@ public class EmployerServiceImpl implements EmployerService {
         
         // Get all jobs for this employer, then filter by status
         List<Job> allJobs = jobRepository.findByEmployerId(employerId);
-        return allJobs.stream()
+        return jobMapper.toJobDTOList(allJobs.stream()
                 .filter(job -> job.getJobStatus().equals(status))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
     }
 
     @Override

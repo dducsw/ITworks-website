@@ -1,23 +1,26 @@
 package com.ITworks.backend.service;
 
 import com.ITworks.backend.dto.Job.JobCreateDTO;
+import com.ITworks.backend.dto.Job.JobDTO;
 import com.ITworks.backend.entity.Job;
 import java.util.List;
-import java.util.Optional;
+
 
 public interface JobService {
-    List<Job> findAllJobs();
-    Optional<Job> findJobById(Integer id);
-    Job saveJob(Job job);
-    Job updateJob(Integer id, Job jobDetails);
-    void deleteJob(Integer id);
-    List<Job> findJobsByEmployerId(Integer employerId);
-    List<Job> findJobsByCompany(String taxNumber);
-    List<Job> searchJobs(String keyword);
-    List<Job> findActiveJobs();
-    List<Job> findJobsByCategory(String categoryName);
+    List<JobDTO> findAllJobs();
+    JobDTO findJobById(Integer id);
 
-    Job createJob(JobCreateDTO jobCreateDTO);
-    List<Job> findJobsByStatus(String status);
-    List<Job> findJobsByEmployerIdAndStatus(Integer employerId, String status);
+    JobDTO createJob(JobCreateDTO jobCreateDTO);
+    JobDTO saveJob(Job job);
+    JobDTO updateJob(Integer id, Job jobDetails);
+    void deleteJob(Integer id);
+    
+    List<JobDTO> findJobsByEmployerId(Integer employerId);
+    List<JobDTO> findJobsByCompany(String taxNumber);
+    List<JobDTO> searchJobs(String keyword);
+    List<JobDTO> findJobsByCategory(String categoryName);
+
+    
+    List<JobDTO> findJobsByStatus(String status);
+    List<JobDTO> findJobsByEmployerIdAndStatus(Integer employerId, String status);
 }

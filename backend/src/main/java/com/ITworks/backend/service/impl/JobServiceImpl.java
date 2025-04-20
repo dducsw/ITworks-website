@@ -1,14 +1,18 @@
 package com.ITworks.backend.service.impl;
 
 import com.ITworks.backend.entity.Job;
+import com.ITworks.backend.mapper.JobMapper;
 import com.ITworks.backend.repositories.CompanyRepository;
 import com.ITworks.backend.repositories.EmployerRepository;
 import com.ITworks.backend.repositories.JobRepository;
 // import com.ITworks.backend.repository.ApplyRepository;
 import com.ITworks.backend.dto.Job.JobCreateDTO;
+import com.ITworks.backend.dto.Job.JobDTO;
 
 
 import com.ITworks.backend.service.JobService;
+
+import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,12 +21,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Pattern;
 
 @Service
+@RequiredArgsConstructor
 public class JobServiceImpl implements JobService {
-
+    
+    @Autowired
+    private final JobMapper jobMapper;
+    
     @Autowired
     private JobRepository jobRepository;
     
@@ -33,26 +40,32 @@ public class JobServiceImpl implements JobService {
     private CompanyRepository companyRepository;
     
     @Override
-    public List<Job> findAllJobs() {
-        return jobRepository.findAll();
+    public List<JobDTO> findAllJobs() {
+        List<Job> jobs = jobRepository.findAll();
+        return jobMapper.toJobDTOList(jobs);
     }
 
     @Override
-    public Optional<Job> findJobById(Integer id) {
-        return jobRepository.findById(id);
+    public JobDTO findJobById(Integer id) {
+        Job job = jobRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Job with ID " + id + " not found"));
+        return jobMapper.toJobDTO(job);
     }
     @Override
-    public List<Job> findJobsByStatus(String status) {
-        return jobRepository.findByJobStatus(status);
+    public List<JobDTO> findJobsByStatus(String status) {
+        List<Job> jobs = jobRepository.findByJobStatus(status);
+        return jobMapper.toJobDTOList(jobs);
     }
 
     @Override
-    public List<Job> findJobsByEmployerIdAndStatus(Integer employerId, String status) {
-        return jobRepository.findByEmployerIdAndJobStatus(employerId, status);
+    public List<JobDTO> findJobsByEmployerIdAndStatus(Integer employerId, String status) {
+        List<Job> jobs = jobRepository.findByEmployerIdAndJobStatus(employerId, status);
+        return jobMapper.toJobDTOList(jobs);
     }
+
     @Override
     @Transactional
-    public Job saveJob(Job job) {
+    public JobDTO saveJob(Job job) {
         // Validate job data
         validateJobData(job);
         
@@ -61,12 +74,13 @@ public class JobServiceImpl implements JobService {
             job.setPostDate(LocalDateTime.now());
         }
         
-        return jobRepository.save(job);
+        Job saveJob = jobRepository.save(job);
+        return jobMapper.toJobDTO(saveJob);
     }
     
     @Override
     @Transactional
-    public Job createJob(JobCreateDTO jobCreateDTO) {
+    public JobDTO createJob(JobCreateDTO jobCreateDTO) {
         // Convert JobCreateDTO to Job entity
         Job job = new Job();
         job.setJobName(jobCreateDTO.getJobName());
@@ -91,11 +105,12 @@ public class JobServiceImpl implements JobService {
         job.setPostDate(LocalDateTime.now());
 
         // Save and return the job
-        return jobRepository.save(job);
+        Job newJob = jobRepository.save(job);
+        return jobMapper.toJobDTO(newJob);
     }
     @Override
     @Transactional
-    public Job updateJob(Integer id, Job jobDetails) {
+    public JobDTO updateJob(Integer id, Job jobDetails) {
         return jobRepository.findById(id)
             .map(existingJob -> {
                 // Update only non-null fields from jobDetails
@@ -143,7 +158,7 @@ public class JobServiceImpl implements JobService {
                     existingJob.setJobStatus(jobDetails.getJobStatus());
                 }
                 
-                return jobRepository.save(existingJob);
+                return jobMapper.toJobDTO(jobRepository.save(existingJob));
             })
             .orElseThrow(() -> new IllegalArgumentException("Job with ID " + id + " not found"));
     }
@@ -158,32 +173,27 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
-    public List<Job> findJobsByEmployerId(Integer employerId) {
-        return jobRepository.findByEmployerId(employerId);
+    public List<JobDTO> findJobsByEmployerId(Integer employerId) {
+        return jobMapper.toJobDTOList(jobRepository.findByEmployerId(employerId));
     }
 
     @Override
-    public List<Job> findJobsByCompany(String taxNumber) {
-        return jobRepository.findByTaxNumber(taxNumber);
+    public List<JobDTO> findJobsByCompany(String taxNumber) {
+        return jobMapper.toJobDTOList(jobRepository.findByTaxNumber(taxNumber));
     }
 
     @Override
-    public List<Job> searchJobs(String keyword) {
+    public List<JobDTO> searchJobs(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return List.of();
         }
         // Using the available method in the repository
-        return jobRepository.findByJobNameContainingIgnoreCase(keyword);
+        return jobMapper.toJobDTOList(jobRepository.findByJobNameContainingIgnoreCase(keyword));
     }
 
     @Override
-    public List<Job> findActiveJobs() {
-        return jobRepository.findByJobStatusAndExpireDateAfter("Active", LocalDateTime.now());
-    }
-
-    @Override
-    public List<Job> findJobsByCategory(String categoryName) {
-        return jobRepository.findByCategory(categoryName);
+    public List<JobDTO> findJobsByCategory(String categoryName) {
+        return jobMapper.toJobDTOList(jobRepository.findByCategory(categoryName));
     }
     
     // Private validation methods
