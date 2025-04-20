@@ -1,6 +1,7 @@
 package com.ITworks.backend.mapper;
 
 import com.ITworks.backend.dto.Job.JobDTO;
+import com.ITworks.backend.dto.Job.JobUpdateDTO;
 import com.ITworks.backend.entity.Job;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -29,4 +30,19 @@ public interface JobMapper {
     @Mapping(target = "employer", ignore = true)     // Ignore the association with employer
     @Mapping(target = "company", ignore = true)      // Ignore the association with company
     Job toEntity(JobDTO dto);
+
+
+    @Mapping(target = "requireExpYear", source = "jobUpdateDTO.requireExpYear")
+    @Mapping(target = "salaryFrom", source = "jobUpdateDTO.salaryFrom")
+    @Mapping(target = "salaryTo", source = "jobUpdateDTO.salaryTo")
+    @Mapping(target = "contractType", source = "jobUpdateDTO.contractType")
+    @Mapping(target = "expireDate", source = "jobUpdateDTO.expireDate")
+    @Mapping(target = "jobDescription", source = "jobUpdateDTO.jobDescription")
+    @Mapping(target = "jobName", source = "jobUpdateDTO.jobName")
+    @Mapping(target = "jobStatus", source = "jobUpdateDTO.jobStatus")
+    @Mapping(target = "jobType", source = "jobUpdateDTO.jobType")
+    @Mapping(target = "level", source = "jobUpdateDTO.level")
+    @Mapping(target = "location", source = "jobUpdateDTO.location")
+    @Mapping(target = "quantity", source = "jobUpdateDTO.quantity")
+    Job updateJobFromDTO(JobUpdateDTO jobUpdateDTO, Job job);
 }

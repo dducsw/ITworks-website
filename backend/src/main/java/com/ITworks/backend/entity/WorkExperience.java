@@ -17,7 +17,7 @@ public class WorkExperience {
     @Column(name = "WorkID")
     private Integer workId;
 
-    @Column(name = "CandidateID", nullable = false)
+    @Column(name = "CandidateID", nullable = false, insertable = false, updatable = false)
     private Integer candidateId;
 
     @Column(name = "savedCV", nullable = false)
@@ -26,11 +26,11 @@ public class WorkExperience {
     @Column(name = "YearOfExperience", nullable = false)
     private Integer yearOfExperience;
 
-    @ManyToOne
-    @JoinColumn(name = "CandidateID", updatable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CandidateID", insertable = true, updatable = true)
     private Candidate candidate;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "INCLUDE",
         joinColumns = @JoinColumn(name = "WorkID"),

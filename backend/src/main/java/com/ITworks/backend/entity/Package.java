@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "[PACKAGE]")
+@Table(name = "PACKAGE")
 @Getter
 @Setter
 public class Package {

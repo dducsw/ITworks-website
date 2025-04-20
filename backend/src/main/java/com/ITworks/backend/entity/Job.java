@@ -64,20 +64,20 @@ public class Job {
     @Column(name = "TaxNumber", nullable = false, length = 13)
     private String taxNumber;
     
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "EmployerID", referencedColumnName = "employerId", insertable = false, updatable = false)
     private Employer employer;
     
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "TaxNumber", referencedColumnName = "taxNumber", insertable = false, updatable = false)
     private Company company;
     
-    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Apply> applications = new HashSet<>();
     
     @ManyToMany
     @JoinTable(
-        name = "[IN]",
+        name = "IN",
         joinColumns = @JoinColumn(name = "JobID"),
         inverseJoinColumns = @JoinColumn(name = "JCName")
     )

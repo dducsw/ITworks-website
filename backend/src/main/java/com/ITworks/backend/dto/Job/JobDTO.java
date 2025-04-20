@@ -22,5 +22,4 @@ public class JobDTO {
     private String jobStatus;
     private Integer employerId;
     private String taxNumber;
-    private String companyName;
 }

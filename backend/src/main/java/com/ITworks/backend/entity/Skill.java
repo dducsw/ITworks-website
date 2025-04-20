@@ -23,9 +23,9 @@ public class Skill {
     @Column(name = "Description", columnDefinition = "nvarchar(max)")
     private String description;
     
-    @ManyToMany(mappedBy = "requiredSkills")
+    @ManyToMany(mappedBy = "requiredSkills", fetch = FetchType.LAZY)
     private Set<Job> jobs = new HashSet<>();
     
-    @ManyToMany(mappedBy = "skills")
+    @ManyToMany(mappedBy = "skills", fetch = FetchType.LAZY)
     private Set<WorkExperience> workExperiences = new HashSet<>();
 }

@@ -3,7 +3,8 @@ package com.ITworks.backend.controller;
 import com.ITworks.backend.dto.ResponseModel;
 import com.ITworks.backend.entity.Apply;
 import com.ITworks.backend.entity.Employer;
-import com.ITworks.backend.entity.Job;
+// import com.ITworks.backend.entity.Job;
+import com.ITworks.backend.dto.Job.JobDTO;
 import com.ITworks.backend.service.EmployerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -69,7 +70,7 @@ public class EmployerController {
     @GetMapping("/{employerId}/jobs")
     public ResponseEntity<?> getEmployerJobs(@PathVariable Integer employerId) {
         try {
-            List<Job> jobs = employerService.getEmployerJobs(employerId);
+            List<JobDTO> jobs = employerService.getEmployerJobs(employerId);
             return ResponseEntity.status(HttpStatus.OK).body(new ResponseModel(
                     200,
                     jobs,
@@ -96,7 +97,7 @@ public class EmployerController {
             @PathVariable Integer employerId,
             @PathVariable String status) {
         try {
-            List<Job> jobs = employerService.getEmployerJobsByStatus(employerId, status);
+            List<JobDTO> jobs = employerService.getEmployerJobsByStatus(employerId, status);
             return ResponseEntity.status(HttpStatus.OK).body(new ResponseModel(
                     200,
                     jobs,
