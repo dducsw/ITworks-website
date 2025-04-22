@@ -32,21 +32,35 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public LoginResponseDTO login(LoginRequestDTO loginRequest) {
+        User user;
+        
         try {
-            // Authenticate with username and password
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getUsername(), 
-                            loginRequest.getPassword())
-            );
+            // Tìm user trước
+            user = userRepository.findByUsername(loginRequest.getUsername())
+                    .orElseThrow(() -> new RuntimeException("User not found with username: " + loginRequest.getUsername()));
+                    
+            // Log thông tin debug
+            System.out.println("Found user with ID: " + user.getId());
+            System.out.println("User password in DB: " + user.getPassword());
+            System.out.println("Password from request: " + loginRequest.getPassword());
+            
+            try {
+                // Xác thực riêng để bắt lỗi cụ thể
+                authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(
+                                loginRequest.getUsername(), 
+                                loginRequest.getPassword())
+                );
+            } catch (Exception authEx) {
+                // Log chi tiết về lỗi xác thực
+                System.out.println("Authentication error: " + authEx.getClass().getName() + " - " + authEx.getMessage());
+                throw new RuntimeException("Authentication failed: " + authEx.getMessage(), authEx);
+            }
         } catch (Exception ex) {
-            throw new RuntimeException("Invalid username or password");
+            System.out.println("Login error: " + ex.getClass().getName() + " - " + ex.getMessage());
+            throw new RuntimeException("Invalid username or password: " + ex.getMessage());
         }
 
-        // Get user from database
-        User user = userRepository.findByUsername(loginRequest.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        
         // Verify user type
         String userType = null;
         Integer typeId = null;

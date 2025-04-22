@@ -344,7 +344,7 @@ CREATE TABLE [APPLY]--
     Status					nvarchar(50),
     UploadCV				nvarchar(255),
 
-    PRIMARY KEY (CandidateID, JobID),
+    PRIMARY KEY (CandidateID, JobID)
 );
 
 ALTER TABLE APPLY
