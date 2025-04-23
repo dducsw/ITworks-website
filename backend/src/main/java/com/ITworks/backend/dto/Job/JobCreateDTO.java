@@ -45,11 +45,4 @@ public class JobCreateDTO {
 
     @NotBlank(message = "Trạng thái công việc không được để trống")
     private String jobStatus;
-
-    @NotNull(message = "ID nhà tuyển dụng không được để trống")
-    private Integer employerId;
-
-    @NotBlank(message = "Mã số thuế không được để trống")
-    @Pattern(regexp = "^(?:[0-9]{10}|[0-9]{13})$", message = "Mã số thuế phải có 10 hoặc 13 chữ số")
-    private String taxNumber;
 }

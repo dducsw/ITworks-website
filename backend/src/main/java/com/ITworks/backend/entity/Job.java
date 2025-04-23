@@ -77,7 +77,7 @@ public class Job {
     
     @ManyToMany
     @JoinTable(
-        name = "IN",
+        name = "[IN]",
         joinColumns = @JoinColumn(name = "JobID"),
         inverseJoinColumns = @JoinColumn(name = "JCName")
     )

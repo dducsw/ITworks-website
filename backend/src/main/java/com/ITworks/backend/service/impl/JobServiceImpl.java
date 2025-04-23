@@ -1,10 +1,13 @@
 package com.ITworks.backend.service.impl;
 
 import com.ITworks.backend.entity.Job;
+import com.ITworks.backend.entity.Employer;
 import com.ITworks.backend.mapper.JobMapper;
 import com.ITworks.backend.repositories.CompanyRepository;
 import com.ITworks.backend.repositories.EmployerRepository;
 import com.ITworks.backend.repositories.JobRepository;
+import com.ITworks.backend.repositories.UserRepository;
+import com.ITworks.backend.entity.User;
 // import com.ITworks.backend.repository.ApplyRepository;
 import com.ITworks.backend.dto.Job.JobCreateDTO;
 import com.ITworks.backend.dto.Job.JobDTO;
@@ -15,6 +18,9 @@ import com.ITworks.backend.service.JobService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +44,9 @@ public class JobServiceImpl implements JobService {
     
     @Autowired
     private CompanyRepository companyRepository;
+    
+    @Autowired
+    private UserRepository userRepository;
     
     @Override
     public List<JobDTO> findAllJobs() {
@@ -81,7 +90,26 @@ public class JobServiceImpl implements JobService {
     @Override
     @Transactional
     public JobDTO createJob(JobCreateDTO jobCreateDTO) {
-        // Convert JobCreateDTO to Job entity
+        // Lấy thông tin employer từ người dùng đăng nhập hiện tại
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        
+        // Kiểm tra quyền EMPLOYER trước khi tạo job
+        if (!authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("EMPLOYER"))) {
+            throw new AccessDeniedException("Only employers can create jobs");
+        }
+        
+        // Lấy ID của người dùng từ token claim hoặc database
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        
+        // Tìm employer từ user để lấy thông tin tax number
+        Employer employer = employerRepository.findById(user.getId())
+                .orElseThrow(() -> new AccessDeniedException("User is not an employer"));
+        
+        
+        // Các xử lý tiếp theo...
         Job job = new Job();
         job.setJobName(jobCreateDTO.getJobName());
         job.setJobType(jobCreateDTO.getJobType());
@@ -95,8 +123,8 @@ public class JobServiceImpl implements JobService {
         job.setJobDescription(jobCreateDTO.getJobDescription());
         job.setExpireDate(jobCreateDTO.getExpireDate());
         job.setJobStatus(jobCreateDTO.getJobStatus());
-        job.setEmployerId(jobCreateDTO.getEmployerId());
-        job.setTaxNumber(jobCreateDTO.getTaxNumber());
+        job.setEmployerId(employer.getEmployerId());
+        job.setTaxNumber(employer.getTaxNumber());
 
         // Validate job data
         validateJobData(job);
@@ -105,70 +133,116 @@ public class JobServiceImpl implements JobService {
         job.setPostDate(LocalDateTime.now());
 
         // Save and return the job
-        Job newJob = jobRepository.save(job);
-        return jobMapper.toJobDTO(newJob);
+        return jobMapper.toJobDTO(jobRepository.save(job));
     }
+    
     @Override
     @Transactional
     public JobDTO updateJob(Integer id, Job jobDetails) {
-        return jobRepository.findById(id)
-            .map(existingJob -> {
-                // Update only non-null fields from jobDetails
-                if (jobDetails.getJobType() != null) {
-                    existingJob.setJobType(jobDetails.getJobType());
-                }
-                if (jobDetails.getContractType() != null) {
-                    existingJob.setContractType(jobDetails.getContractType());
-                }
-                if (jobDetails.getLevel() != null) {
-                    existingJob.setLevel(jobDetails.getLevel());
-                }
-                if (jobDetails.getQuantity() != null) {
-                    validatePositiveQuantity(jobDetails.getQuantity());
-                    existingJob.setQuantity(jobDetails.getQuantity());
-                }
-                if (jobDetails.getSalaryFrom() != null) {
-                    validateNonNegativeSalary(jobDetails.getSalaryFrom());
-                    existingJob.setSalaryFrom(jobDetails.getSalaryFrom());
-                }
-                if (jobDetails.getSalaryTo() != null) {
-                    BigDecimal fromSalary = jobDetails.getSalaryFrom() != null ? 
-                                         jobDetails.getSalaryFrom() : existingJob.getSalaryFrom();
-                    validateSalaryRange(fromSalary, jobDetails.getSalaryTo());
-                    existingJob.setSalaryTo(jobDetails.getSalaryTo());
-                }
-                if (jobDetails.getRequireExpYear() != null) {
-                    validateNonNegativeExperience(jobDetails.getRequireExpYear());
-                    existingJob.setRequireExpYear(jobDetails.getRequireExpYear());
-                }
-                if (jobDetails.getLocation() != null) {
-                    existingJob.setLocation(jobDetails.getLocation());
-                }
-                if (jobDetails.getJobDescription() != null) {
-                    existingJob.setJobDescription(jobDetails.getJobDescription());
-                }
-                if (jobDetails.getJobName() != null) {
-                    existingJob.setJobName(jobDetails.getJobName());
-                }
-                if (jobDetails.getExpireDate() != null) {
-                    validateFutureDate(jobDetails.getExpireDate(), existingJob.getPostDate());
-                    existingJob.setExpireDate(jobDetails.getExpireDate());
-                }
-                if (jobDetails.getJobStatus() != null) {
-                    existingJob.setJobStatus(jobDetails.getJobStatus());
-                }
-                
-                return jobMapper.toJobDTO(jobRepository.save(existingJob));
-            })
-            .orElseThrow(() -> new IllegalArgumentException("Job with ID " + id + " not found"));
+        // Xác minh quyền EMPLOYER
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        
+        // Kiểm tra quyền EMPLOYER
+        if (!authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("EMPLOYER"))) {
+            throw new AccessDeniedException("Only employers can update jobs");
+        }
+        
+        // Lấy thông tin employer hiện tại
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        
+        Employer employer = employerRepository.findById(user.getId())
+                .orElseThrow(() -> new AccessDeniedException("User is not an employer"));
+        
+        // Tìm job cần cập nhật
+        Job existingJob = jobRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Job with ID " + id + " not found"));
+        
+        // Kiểm tra quyền sở hữu job (chỉ employer tạo job mới có thể sửa)
+        if (!existingJob.getEmployerId().equals(employer.getEmployerId())) {
+            throw new AccessDeniedException("You can only update your own jobs");
+        }
+        
+        // Cập nhật job (giữ nguyên code hiện tại)
+        if (jobDetails.getJobType() != null) {
+            existingJob.setJobType(jobDetails.getJobType());
+        }
+        if (jobDetails.getContractType() != null) {
+            existingJob.setContractType(jobDetails.getContractType());
+        }
+        if (jobDetails.getLevel() != null) {
+            existingJob.setLevel(jobDetails.getLevel());
+        }
+        if (jobDetails.getQuantity() != null) {
+            validatePositiveQuantity(jobDetails.getQuantity());
+            existingJob.setQuantity(jobDetails.getQuantity());
+        }
+        if (jobDetails.getSalaryFrom() != null) {
+            validateNonNegativeSalary(jobDetails.getSalaryFrom());
+            existingJob.setSalaryFrom(jobDetails.getSalaryFrom());
+        }
+        if (jobDetails.getSalaryTo() != null) {
+            BigDecimal fromSalary = jobDetails.getSalaryFrom() != null ? 
+                                 jobDetails.getSalaryFrom() : existingJob.getSalaryFrom();
+            validateSalaryRange(fromSalary, jobDetails.getSalaryTo());
+            existingJob.setSalaryTo(jobDetails.getSalaryTo());
+        }
+        if (jobDetails.getRequireExpYear() != null) {
+            validateNonNegativeExperience(jobDetails.getRequireExpYear());
+            existingJob.setRequireExpYear(jobDetails.getRequireExpYear());
+        }
+        if (jobDetails.getLocation() != null) {
+            existingJob.setLocation(jobDetails.getLocation());
+        }
+        if (jobDetails.getJobDescription() != null) {
+            existingJob.setJobDescription(jobDetails.getJobDescription());
+        }
+        if (jobDetails.getJobName() != null) {
+            existingJob.setJobName(jobDetails.getJobName());
+        }
+        if (jobDetails.getExpireDate() != null) {
+            validateFutureDate(jobDetails.getExpireDate(), existingJob.getPostDate());
+            existingJob.setExpireDate(jobDetails.getExpireDate());
+        }
+        if (jobDetails.getJobStatus() != null) {
+            existingJob.setJobStatus(jobDetails.getJobStatus());
+        }
+        
+        return jobMapper.toJobDTO(jobRepository.save(existingJob));
     }
 
     @Override
     @Transactional
     public void deleteJob(Integer id) {
-        Job job = jobRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Job with ID " + id + " not found"));
+        // Xác minh quyền EMPLOYER
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
         
+        // Kiểm tra quyền EMPLOYER
+        if (!authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("EMPLOYER"))) {
+            throw new AccessDeniedException("Only employers can delete jobs");
+        }
+        
+        // Lấy thông tin employer hiện tại
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        
+        Employer employer = employerRepository.findById(user.getId())
+                .orElseThrow(() -> new AccessDeniedException("User is not an employer"));
+        
+        // Tìm job cần xóa
+        Job job = jobRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Job with ID " + id + " not found"));
+        
+        // Kiểm tra quyền sở hữu job (chỉ employer tạo job mới có thể xóa)
+        if (!job.getEmployerId().equals(employer.getEmployerId())) {
+            throw new AccessDeniedException("You can only delete your own jobs");
+        }
+        
+        // Xóa job
         jobRepository.delete(job);
     }
 

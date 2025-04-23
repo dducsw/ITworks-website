@@ -31,7 +31,13 @@ public class JwtService implements IJwtService {
 
     @Override
     public String generateAccessToken(Map<String, Object> extraClaims, String username) {
-        extraClaims.put("role", "USER"); // Use a default role, will be overridden by authorities
+        // Sử dụng userType làm role nếu có
+        String userType = (String) extraClaims.get("userType");
+        if (userType != null) {
+            extraClaims.put("role", userType);  // Role sẽ giống với userType
+        } else {
+            extraClaims.put("role", "USER");  // Mặc định là USER
+        }
         return buildToken(extraClaims, username, jwtTokenExpiration, getAccessSecretKey());
     }
 
@@ -82,7 +88,8 @@ public class JwtService implements IJwtService {
                 .compact();
     }
 
-    private Claims extractAllClaims(String token, TokenType tokenType) {
+    @Override
+    public Claims extractAllClaims(String token, TokenType tokenType) {
         return Jwts.parserBuilder()
                 .setSigningKey(tokenType.equals(TokenType.ACCESS) ? getAccessSecretKey() : getRefreshSecretKey())
                 .build()
