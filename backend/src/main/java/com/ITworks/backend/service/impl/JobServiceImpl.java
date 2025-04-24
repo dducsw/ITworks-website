@@ -2,15 +2,14 @@ package com.ITworks.backend.service.impl;
 
 import com.ITworks.backend.entity.Job;
 import com.ITworks.backend.entity.Employer;
-import com.ITworks.backend.entity.Employer;
+
 import com.ITworks.backend.mapper.JobMapper;
 import com.ITworks.backend.repositories.CompanyRepository;
 import com.ITworks.backend.repositories.EmployerRepository;
 import com.ITworks.backend.repositories.JobRepository;
 import com.ITworks.backend.repositories.UserRepository;
 import com.ITworks.backend.entity.User;
-import com.ITworks.backend.repositories.UserRepository;
-import com.ITworks.backend.entity.User;
+
 import com.ITworks.backend.dto.Job.JobCreateDTO;
 import com.ITworks.backend.dto.Job.JobDTO;
 import com.ITworks.backend.service.JobService;
@@ -21,9 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.access.AccessDeniedException;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,8 +41,6 @@ public class JobServiceImpl implements JobService {
     @PersistenceContext
     private EntityManager entityManager;
     
-    @PersistenceContext
-    private EntityManager entityManager;
     
     @Autowired
     private final JobMapper jobMapper;
@@ -59,8 +54,7 @@ public class JobServiceImpl implements JobService {
     @Autowired
     private CompanyRepository companyRepository;
     
-    @Autowired
-    private UserRepository userRepository;
+    
     
     @Autowired
     private UserRepository userRepository;
@@ -256,27 +250,9 @@ public class JobServiceImpl implements JobService {
         Employer employer = employerRepository.findById(user.getId())
                 .orElseThrow(() -> new AccessDeniedException("User is not an employer"));
         
-        // Kiểm tra quyền sở hữu job
-        // Xác thực employer
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        
-        // Kiểm tra quyền EMPLOYER
-        if (!authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("EMPLOYER"))) {
-            throw new AccessDeniedException("Only employers can delete jobs");
-        }
-        
-        // Lấy thông tin employer hiện tại
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
-        
-        Employer employer = employerRepository.findById(user.getId())
-                .orElseThrow(() -> new AccessDeniedException("User is not an employer"));
         
         // Kiểm tra quyền sở hữu job
         Job job = jobRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Job with ID " + id + " not found"));
                 .orElseThrow(() -> new IllegalArgumentException("Job with ID " + id + " not found"));
         
         if (!job.getEmployerId().equals(employer.getEmployerId())) {
