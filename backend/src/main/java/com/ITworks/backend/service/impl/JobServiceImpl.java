@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -81,7 +82,10 @@ public class JobServiceImpl implements JobService {
     @Override
     @Transactional
     public JobDTO createJob(JobCreateDTO jobCreateDTO) {
-        // Convert JobCreateDTO to Job entity
+        // Validate DTO trước khi chuyển đổi thành entity
+        validateJobCreateDTO(jobCreateDTO);
+        
+        // Convert JobCreateDTO to Job entity sau khi đã validate
         Job job = new Job();
         job.setJobName(jobCreateDTO.getJobName());
         job.setJobType(jobCreateDTO.getJobType());
@@ -98,9 +102,6 @@ public class JobServiceImpl implements JobService {
         job.setEmployerId(jobCreateDTO.getEmployerId());
         job.setTaxNumber(jobCreateDTO.getTaxNumber());
 
-        // Validate job data
-        validateJobData(job);
-
         // Set current datetime as post date
         job.setPostDate(LocalDateTime.now());
 
@@ -113,7 +114,10 @@ public class JobServiceImpl implements JobService {
     public JobDTO updateJob(Integer id, Job jobDetails) {
         return jobRepository.findById(id)
             .map(existingJob -> {
-                // Update only non-null fields from jobDetails
+                // Validate update data first before making any changes
+                validateJobUpdate(jobDetails, existingJob);
+                
+                // Once validated, perform the updates
                 if (jobDetails.getJobType() != null) {
                     existingJob.setJobType(jobDetails.getJobType());
                 }
@@ -124,21 +128,15 @@ public class JobServiceImpl implements JobService {
                     existingJob.setLevel(jobDetails.getLevel());
                 }
                 if (jobDetails.getQuantity() != null) {
-                    validatePositiveQuantity(jobDetails.getQuantity());
                     existingJob.setQuantity(jobDetails.getQuantity());
                 }
                 if (jobDetails.getSalaryFrom() != null) {
-                    validateNonNegativeSalary(jobDetails.getSalaryFrom());
                     existingJob.setSalaryFrom(jobDetails.getSalaryFrom());
                 }
                 if (jobDetails.getSalaryTo() != null) {
-                    BigDecimal fromSalary = jobDetails.getSalaryFrom() != null ? 
-                                         jobDetails.getSalaryFrom() : existingJob.getSalaryFrom();
-                    validateSalaryRange(fromSalary, jobDetails.getSalaryTo());
                     existingJob.setSalaryTo(jobDetails.getSalaryTo());
                 }
                 if (jobDetails.getRequireExpYear() != null) {
-                    validateNonNegativeExperience(jobDetails.getRequireExpYear());
                     existingJob.setRequireExpYear(jobDetails.getRequireExpYear());
                 }
                 if (jobDetails.getLocation() != null) {
@@ -151,7 +149,6 @@ public class JobServiceImpl implements JobService {
                     existingJob.setJobName(jobDetails.getJobName());
                 }
                 if (jobDetails.getExpireDate() != null) {
-                    validateFutureDate(jobDetails.getExpireDate(), existingJob.getPostDate());
                     existingJob.setExpireDate(jobDetails.getExpireDate());
                 }
                 if (jobDetails.getJobStatus() != null) {
@@ -160,7 +157,7 @@ public class JobServiceImpl implements JobService {
                 
                 return jobMapper.toJobDTO(jobRepository.save(existingJob));
             })
-            .orElseThrow(() -> new IllegalArgumentException("Job with ID " + id + " not found"));
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy công việc với ID: " + id));
     }
 
     @Override
@@ -200,15 +197,15 @@ public class JobServiceImpl implements JobService {
     private void validateJobData(Job job) {
         // Required fields
         if (job.getJobType() == null || job.getJobType().trim().isEmpty()) {
-            throw new IllegalArgumentException("Job type cannot be empty");
+            throw new IllegalArgumentException("Loại công việc không được để trống");
         }
         
         if (job.getContractType() == null || job.getContractType().trim().isEmpty()) {
-            throw new IllegalArgumentException("Contract type cannot be empty");
+            throw new IllegalArgumentException("Loại hợp đồng không được để trống");
         }
         
         if (job.getLevel() == null || job.getLevel().trim().isEmpty()) {
-            throw new IllegalArgumentException("Level cannot be empty");
+            throw new IllegalArgumentException("Cấp bậc không được để trống");
         }
         
         validatePositiveQuantity(job.getQuantity());
@@ -220,80 +217,227 @@ public class JobServiceImpl implements JobService {
         }
         
         if (job.getLocation() == null || job.getLocation().trim().isEmpty()) {
-            throw new IllegalArgumentException("Location cannot be empty");
+            throw new IllegalArgumentException("Địa điểm làm việc không được để trống");
         }
         
         if (job.getJobDescription() == null || job.getJobDescription().trim().isEmpty()) {
-            throw new IllegalArgumentException("Job description cannot be empty");
+            throw new IllegalArgumentException("Mô tả công việc không được để trống");
         }
         
         if (job.getJobName() == null || job.getJobName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Job name cannot be empty");
+            throw new IllegalArgumentException("Tên công việc không được để trống");
         }
         
         if (job.getExpireDate() == null) {
-            throw new IllegalArgumentException("Expire date cannot be empty");
+            throw new IllegalArgumentException("Ngày hết hạn không được để trống");
         }
         
         validateFutureDate(job.getExpireDate(), LocalDateTime.now());
         
         if (job.getJobStatus() == null || job.getJobStatus().trim().isEmpty()) {
-            throw new IllegalArgumentException("Job status cannot be empty");
+            throw new IllegalArgumentException("Trạng thái công việc không được để trống");
         }
         
         // Check employer and company
         Integer employerId = job.getEmployerId();
         if (employerId == null || !employerRepository.existsById(employerId)) {
-            throw new IllegalArgumentException("Invalid employer ID");
+            throw new IllegalArgumentException("ID nhà tuyển dụng không hợp lệ");
         }
         
         String taxNumber = job.getTaxNumber();
         if (taxNumber == null || !companyRepository.existsById(taxNumber)) {
-            throw new IllegalArgumentException("Invalid tax number");
+            throw new IllegalArgumentException("Mã số thuế không hợp lệ");
         }
         
         // Validate tax number format
         if (!Pattern.matches("^(\\d{10}|\\d{13})$", taxNumber)) {
-            throw new IllegalArgumentException("Tax number must be 10 hoặc 13 chữ số");
+            throw new IllegalArgumentException("Mã số thuế phải có 10 hoặc 13 chữ số");
         }
-        
-        // // Check employer belongs to the company
-        // if (!employerRepository.existsByEmployerIdAndTaxNumber(employerId, taxNumber)) {
-        //     throw new IllegalArgumentException("Employer does not belong to this company");
-        // }
     }
     
     private void validatePositiveQuantity(Integer quantity) {
         if (quantity == null || quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than 0");
+            throw new IllegalArgumentException("Số lượng tuyển dụng phải lớn hơn 0");
         }
     }
     
     private void validateNonNegativeSalary(BigDecimal salary) {
         if (salary == null || salary.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Salary cannot be negative");
+            throw new IllegalArgumentException("Mức lương không được âm");
         }
     }
     
     private void validateSalaryRange(BigDecimal from, BigDecimal to) {
-        if (to == null) {
-            throw new IllegalArgumentException("Maximum salary cannot be empty");
-        }
-        
         if (from != null && to.compareTo(from) < 0) {
-            throw new IllegalArgumentException("Maximum salary must be greater than or equal to minimum salary");
+            throw new IllegalArgumentException("Mức lương tối đa phải lớn hơn hoặc bằng mức lương tối thiểu");
         }
     }
     
     private void validateNonNegativeExperience(Integer years) {
         if (years != null && years < 0) {
-            throw new IllegalArgumentException("Experience years cannot be negative");
+            throw new IllegalArgumentException("Số năm kinh nghiệm không được âm");
         }
     }
     
     private void validateFutureDate(LocalDateTime date, LocalDateTime referenceDate) {
         if (!date.isAfter(referenceDate)) {
-            throw new IllegalArgumentException("Expire date must be after post date");
+            throw new IllegalArgumentException("Ngày hết hạn phải sau ngày đăng bài");
+        }
+    }
+
+    /**
+     * Kiểm tra tính hợp lệ của dữ liệu khi cập nhật công việc
+     */
+    private void validateJobUpdate(Job jobDetails, Job existingJob) {
+        // Tạo list để lưu các lỗi
+        List<String> errors = new ArrayList<>();
+        
+        // Kiểm tra các trường String không được rỗng nếu được cung cấp
+        if (jobDetails.getJobType() != null && jobDetails.getJobType().trim().isEmpty()) {
+            errors.add("Loại công việc không được để trống");
+        }
+        
+        if (jobDetails.getContractType() != null && jobDetails.getContractType().trim().isEmpty()) {
+            errors.add("Loại hợp đồng không được để trống");
+        }
+        
+        if (jobDetails.getLevel() != null && jobDetails.getLevel().trim().isEmpty()) {
+            errors.add("Cấp bậc không được để trống");
+        }
+        
+        if (jobDetails.getLocation() != null && jobDetails.getLocation().trim().isEmpty()) {
+            errors.add("Địa điểm làm việc không được để trống");
+        }
+        
+        if (jobDetails.getJobDescription() != null && jobDetails.getJobDescription().trim().isEmpty()) {
+            errors.add("Mô tả công việc không được để trống");
+        }
+        
+        if (jobDetails.getJobName() != null && jobDetails.getJobName().trim().isEmpty()) {
+            errors.add("Tên công việc không được để trống");
+        }
+        
+        if (jobDetails.getJobStatus() != null && jobDetails.getJobStatus().trim().isEmpty()) {
+            errors.add("Trạng thái công việc không được để trống");
+        }
+        
+        // Kiểm tra số lượng phải dương nếu được cung cấp
+        if (jobDetails.getQuantity() != null && jobDetails.getQuantity() <= 0) {
+            errors.add("Số lượng tuyển dụng phải lớn hơn 0");
+        }
+        
+        // Kiểm tra mức lương không được âm nếu được cung cấp
+        if (jobDetails.getSalaryFrom() != null && jobDetails.getSalaryFrom().compareTo(BigDecimal.ZERO) < 0) {
+            errors.add("Mức lương không được âm");
+        }
+        
+        // Kiểm tra khoảng lương hợp lệ
+        BigDecimal fromSalary = jobDetails.getSalaryFrom() != null ? 
+                            jobDetails.getSalaryFrom() : existingJob.getSalaryFrom();
+        BigDecimal toSalary = jobDetails.getSalaryTo() != null ?
+                            jobDetails.getSalaryTo() : existingJob.getSalaryTo();
+                            
+        if (fromSalary != null && toSalary != null && toSalary.compareTo(fromSalary) < 0) {
+            errors.add("Mức lương tối đa phải lớn hơn hoặc bằng mức lương tối thiểu");
+        }
+        
+        // Kiểm tra số năm kinh nghiệm không được âm nếu được cung cấp
+        if (jobDetails.getRequireExpYear() != null && jobDetails.getRequireExpYear() < 0) {
+            errors.add("Số năm kinh nghiệm không được âm");
+        }
+        
+        // Kiểm tra ngày hết hạn phải trong tương lai nếu được cung cấp
+        if (jobDetails.getExpireDate() != null && !jobDetails.getExpireDate().isAfter(existingJob.getPostDate())) {
+            errors.add("Ngày hết hạn phải sau ngày đăng bài");
+        }
+        
+        // Kiểm tra trạng thái công việc hợp lệ
+        if (jobDetails.getJobStatus() != null) {
+            String status = jobDetails.getJobStatus();
+            if (!status.equals("Đang mở") && !status.equals("Đã đóng") && !status.equals("Đã hết hạn")) {
+                errors.add("Trạng thái công việc không hợp lệ. Phải là một trong các giá trị: Đang mở, Đã đóng, Đã hết hạn");
+            }
+        }
+        
+        // Ném ngoại lệ nếu có bất kỳ lỗi nào
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(String.join("; ", errors));
+        }
+    }
+
+    /**
+     * Kiểm tra tính hợp lệ của JobCreateDTO
+     */
+    private void validateJobCreateDTO(JobCreateDTO dto) {
+        List<String> errors = new ArrayList<>();
+        
+        // Kiểm tra các trường bắt buộc
+        if (dto.getJobName() == null || dto.getJobName().trim().isEmpty()) {
+            errors.add("Tên công việc không được để trống");
+        }
+        
+        if (dto.getJobType() == null || dto.getJobType().trim().isEmpty()) {
+            errors.add("Loại công việc không được để trống");
+        }
+        
+        if (dto.getContractType() == null || dto.getContractType().trim().isEmpty()) {
+            errors.add("Loại hợp đồng không được để trống");
+        }
+        
+        if (dto.getLevel() == null || dto.getLevel().trim().isEmpty()) {
+            errors.add("Cấp bậc không được để trống");
+        }
+        
+        if (dto.getQuantity() == null || dto.getQuantity() <= 0) {
+            errors.add("Số lượng tuyển dụng phải lớn hơn 0");
+        }
+        
+        if (dto.getSalaryFrom() == null || dto.getSalaryFrom().compareTo(BigDecimal.ZERO) < 0) {
+            errors.add("Mức lương tối thiểu không được âm");
+        }
+        
+        if (dto.getSalaryTo() == null) {
+            errors.add("Mức lương tối đa không được để trống");
+        } else if (dto.getSalaryFrom() != null && dto.getSalaryTo().compareTo(dto.getSalaryFrom()) < 0) {
+            errors.add("Mức lương tối đa phải lớn hơn hoặc bằng mức lương tối thiểu");
+        }
+        
+        if (dto.getRequireExpYear() != null && dto.getRequireExpYear() < 0) {
+            errors.add("Số năm kinh nghiệm không được âm");
+        }
+        
+        if (dto.getLocation() == null || dto.getLocation().trim().isEmpty()) {
+            errors.add("Địa điểm làm việc không được để trống");
+        }
+        
+        if (dto.getJobDescription() == null || dto.getJobDescription().trim().isEmpty()) {
+            errors.add("Mô tả công việc không được để trống");
+        }
+        
+        if (dto.getExpireDate() == null) {
+            errors.add("Ngày hết hạn không được để trống");
+        } else if (!dto.getExpireDate().isAfter(LocalDateTime.now())) {
+            errors.add("Ngày hết hạn phải sau thời điểm hiện tại");
+        }
+        
+        if (dto.getJobStatus() == null || dto.getJobStatus().trim().isEmpty()) {
+            errors.add("Trạng thái công việc không được để trống");
+        } else {
+            String status = dto.getJobStatus();
+            if (!status.equals("Đang mở") && !status.equals("Đã đóng") && !status.equals("Đã hết hạn")) {
+                errors.add("Trạng thái công việc không hợp lệ. Phải là một trong các giá trị: Đang mở, Đã đóng, Đã hết hạn");
+            }
+        }
+        
+        // Kiểm tra nhà tuyển dụng và công ty
+        Integer employerId = dto.getEmployerId();
+        if (employerId == null || !employerRepository.existsById(employerId)) {
+            errors.add("ID nhà tuyển dụng không hợp lệ");
+        }
+        
+        // Ném ngoại lệ nếu có lỗi
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(String.join("; ", errors));
         }
     }
 }
