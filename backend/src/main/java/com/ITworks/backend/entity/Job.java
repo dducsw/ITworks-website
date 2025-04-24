@@ -10,6 +10,53 @@ import java.util.Set;
 
 @Entity
 @Table(name = "JOB")
+@NamedStoredProcedureQueries({
+    @NamedStoredProcedureQuery(
+        name = "InsertJob",
+        procedureName = "InsertJob",
+        parameters = {
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "JobType", type = String.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "ContractType", type = String.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "Level", type = String.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "Quantity", type = Integer.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "SalaryFrom", type = BigDecimal.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "SalaryTo", type = BigDecimal.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "RequireExpYear", type = Integer.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "Location", type = String.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "JD", type = String.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "JobName", type = String.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "expireDate", type = LocalDateTime.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "EmployerID", type = Integer.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "TaxNumber", type = String.class)
+        }
+    ),
+    @NamedStoredProcedureQuery(
+        name = "UpdateJob",
+        procedureName = "UpdateJob",
+        parameters = {
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "JobID", type = Integer.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "JobType", type = String.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "ContractType", type = String.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "Level", type = String.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "Quantity", type = Integer.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "SalaryFrom", type = BigDecimal.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "SalaryTo", type = BigDecimal.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "RequireExpYear", type = Integer.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "Location", type = String.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "JD", type = String.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "JobName", type = String.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "expireDate", type = LocalDateTime.class),
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "JobStatus", type = String.class)
+        }
+    ),
+    @NamedStoredProcedureQuery(
+        name = "DeleteJob",
+        procedureName = "DeleteJob",
+        parameters = {
+            @StoredProcedureParameter(mode = ParameterMode.IN, name = "JobID", type = Integer.class)
+        }
+    )
+})
 @Getter
 @Setter
 public class Job {
@@ -77,7 +124,7 @@ public class Job {
     
     @ManyToMany
     @JoinTable(
-        name = "IN",
+        name = "[IN]",
         joinColumns = @JoinColumn(name = "JobID"),
         inverseJoinColumns = @JoinColumn(name = "JCName")
     )

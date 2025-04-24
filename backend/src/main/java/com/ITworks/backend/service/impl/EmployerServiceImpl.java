@@ -7,11 +7,16 @@ import com.ITworks.backend.mapper.JobMapper;
 import com.ITworks.backend.repositories.ApplyRepository;
 import com.ITworks.backend.repositories.EmployerRepository;
 import com.ITworks.backend.repositories.JobRepository;
+import com.ITworks.backend.repositories.UserRepository;
 import com.ITworks.backend.service.EmployerService;
 
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import com.ITworks.backend.dto.Job.JobDTO; // Import JobDTO
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+// Import User entity
+import com.ITworks.backend.entity.User;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +45,8 @@ public class EmployerServiceImpl implements EmployerService {
     @Autowired
     private ApplyRepository applyRepository;
     
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     public List<Employer> findAllEmployers() {
@@ -103,13 +113,51 @@ public class EmployerServiceImpl implements EmployerService {
 
     @Override
     public Optional<Employer> findByUsername(String username) {
-        // The repository method returns Optional<Candidate> which seems incorrect
-        // We need to cast or fix the repository method
         return employerRepository.findByUsername(username);
     }
 
     @Override
     public Optional<Employer> findByEmail(String email) {
         return employerRepository.findByEmail(email);
+    }
+
+    @Override
+    public List<JobDTO> getCurrentEmployerJobs() {
+        // Lấy thông tin người dùng từ Security Context
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AccessDeniedException("Not authenticated");
+        }
+        
+        // Lấy ID từ JWT claims
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        
+        // Tìm employer từ user
+        Employer employer = employerRepository.findById(user.getId())
+                .orElseThrow(() -> new RuntimeException("Current user is not an employer"));
+        
+        // Truy vấn jobs của employer này
+        String status = "Đang mở";
+        return getEmployerJobsByStatus(employer.getEmployerId(), status);
+    }
+    
+    @Override
+    public List<JobDTO> getCurrentEmployerJobsByStatus(String status) {
+        // Tương tự như getCurrentEmployerJobs nhưng thêm lọc theo status
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AccessDeniedException("Not authenticated");
+        }
+        
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        
+        Employer employer = employerRepository.findById(user.getId())
+                .orElseThrow(() -> new RuntimeException("Current user is not an employer"));
+        
+        return getEmployerJobsByStatus(employer.getEmployerId(), status);
     }
 }

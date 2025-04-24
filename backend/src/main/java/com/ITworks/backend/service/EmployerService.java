@@ -13,7 +13,21 @@ public interface EmployerService {
 
     // Job
     List<JobDTO> getEmployerJobs(Integer employerId);
+    
     List<JobDTO> getEmployerJobsByStatus(Integer employerId, String Status);
+
+    /**
+     * Lấy danh sách công việc của employer đang đăng nhập
+     * @return Danh sách công việc
+     */
+    List<JobDTO> getCurrentEmployerJobs();
+    
+    /**
+     * Lấy danh sách công việc theo trạng thái của employer đang đăng nhập
+     * @param status Trạng thái công việc cần lọc
+     * @return Danh sách công việc theo trạng thái
+     */
+    List<JobDTO> getCurrentEmployerJobsByStatus(String status);
 
     List<Apply> getJobApplications(Integer employerId, Integer jobId);
     boolean updateApplicationStatus(Integer candidateId, Integer jobId, String newStatus);

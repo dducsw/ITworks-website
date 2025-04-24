@@ -1,134 +1,115 @@
 package com.ITworks.backend.controller;
 
 import com.ITworks.backend.dto.ResponseModel;
-import com.ITworks.backend.entity.Apply;
-import com.ITworks.backend.entity.Employer;
-// import com.ITworks.backend.entity.Job;
+
 import com.ITworks.backend.dto.Job.JobDTO;
+import com.ITworks.backend.dto.Job.JobCreateDTO;
+import com.ITworks.backend.dto.Job.JobUpdateDTO;
+import com.ITworks.backend.entity.Job;
+import com.ITworks.backend.mapper.JobMapper;
 import com.ITworks.backend.service.EmployerService;
+import com.ITworks.backend.service.JobService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
-import java.util.Map;
+import org.springframework.security.access.AccessDeniedException;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/employers")
 public class EmployerController {
 
     private final EmployerService employerService;
+    private final JobService jobService;
+    private final JobMapper jobMapper;
 
-    public EmployerController(EmployerService employerService) {
-        this.employerService = employerService;
-    }
-
-    // Get all employers
-    @GetMapping
-    public ResponseEntity<?> getAllEmployers() {
+    @GetMapping("/my-jobs")
+    public ResponseEntity<?> getMyJobs() {
         try {
-            List<Employer> employers = employerService.findAllEmployers();
-            return ResponseEntity.status(HttpStatus.OK).body(new ResponseModel(
-                    200,
-                    employers,
-                    "Retrieved all employers successfully"
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(
-                    500,
-                    null,
-                    e.getMessage()
-            ));
-        }
-    }
-
-    // Get employer by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getEmployerById(@PathVariable Integer id) {
-        try {
-            return employerService.findEmployerById(id)
-                    .map(employer -> ResponseEntity.status(HttpStatus.OK).body(new ResponseModel(
-                            200,
-                            employer,
-                            "Employer retrieved successfully"
-                    )))
-                    .orElse(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseModel(
-                            400,
-                            null,
-                            "Employer not found with id: " + id
-                    )));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(
-                    500,
-                    null,
-                    e.getMessage()
-            ));
-        }
-    }
-
-    // Get all jobs for an employer
-    @GetMapping("/{employerId}/jobs")
-    public ResponseEntity<?> getEmployerJobs(@PathVariable Integer employerId) {
-        try {
-            List<JobDTO> jobs = employerService.getEmployerJobs(employerId);
-            return ResponseEntity.status(HttpStatus.OK).body(new ResponseModel(
+            List<JobDTO> jobs = employerService.getCurrentEmployerJobs();
+            return ResponseEntity.ok(new ResponseModel(
                     200,
                     jobs,
-                    "Retrieved jobs successfully"
-            ));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseModel(
-                    400,
-                    null,
-                    e.getMessage()
+                    "Retrieved employer jobs successfully"
             ));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(
                     500,
-                    null,
+                    "",
                     e.getMessage()
             ));
         }
     }
 
-    // Get jobs by status for an employer
-    @GetMapping("/{employerId}/jobs/status/{status}")
-    public ResponseEntity<?> getEmployerJobsByStatus(
-            @PathVariable Integer employerId,
-            @PathVariable String status) {
+    @GetMapping("/my-jobs/status/{status}")
+    public ResponseEntity<?> getMyJobsByStatus(@PathVariable String status) {
         try {
-            List<JobDTO> jobs = employerService.getEmployerJobsByStatus(employerId, status);
-            return ResponseEntity.status(HttpStatus.OK).body(new ResponseModel(
+            List<JobDTO> jobs = employerService.getCurrentEmployerJobsByStatus(status);
+            return ResponseEntity.ok(new ResponseModel(
                     200,
                     jobs,
-                    "Retrieved jobs with status '" + status + "' successfully"
-            ));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseModel(
-                    400,
-                    null,
-                    e.getMessage()
+                    "Retrieved employer jobs successfully"
             ));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(
                     500,
+                    "",
+                    e.getMessage()
+            ));
+        }
+    }
+
+    @PostMapping("/my-jobs")
+    @PreAuthorize("hasAuthority('EMPLOYER')")
+    public ResponseEntity<?> createJob(@Valid @RequestBody JobCreateDTO jobCreateDTO) {
+        try {
+            JobDTO job = jobService.createJob(jobCreateDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(new ResponseModel(
+                    201,
+                    job,
+                    "Job created successfully"
+            ));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseModel(
+                    403,
+                    null,
+                    e.getMessage()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseModel(
+                    400,
                     null,
                     e.getMessage()
             ));
         }
     }
 
-    // Get applications for a specific job
-    @GetMapping("/{employerId}/jobs/{jobId}/applications")
-    public ResponseEntity<?> getJobApplications(
-            @PathVariable Integer employerId,
-            @PathVariable Integer jobId) {
+    // Update a job (only for EMPLOYER and only their jobs)
+    @PutMapping("/my-jobs/{id}")
+    @PreAuthorize("hasAuthority('EMPLOYER')")
+    public ResponseEntity<?> updateJob(@PathVariable Integer id,
+                                       @Valid @RequestBody JobUpdateDTO jobUpdateDTO) {
         try {
-            List<Apply> applications = employerService.getJobApplications(employerId, jobId);
+            Job existingJob = jobMapper.toEntity(jobService.findJobById(id));
+            Job updatedJob = jobMapper.updateJobFromDTO(jobUpdateDTO, existingJob);
+
+            JobDTO updatedJobDTO = jobService.updateJob(id, updatedJob);
+
             return ResponseEntity.status(HttpStatus.OK).body(new ResponseModel(
                     200,
-                    applications,
-                    "Retrieved job applications successfully"
+                    updatedJobDTO,
+                    "Job updated successfully"
+            ));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseModel(
+                    403,
+                    null,
+                    e.getMessage()
             ));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseModel(
@@ -145,49 +126,41 @@ public class EmployerController {
         }
     }
 
-    // Update application status
-    @PutMapping("/{employerId}/applications/{jobId}/candidates/{candidateId}")
-    public ResponseEntity<?> updateApplicationStatus(
-            @PathVariable Integer employerId,
-            @PathVariable Integer jobId,
-            @PathVariable Integer candidateId,
-            @RequestBody Map<String, String> statusUpdate) {
-        
-        String newStatus = statusUpdate.get("status");
-        if (newStatus == null || newStatus.trim().isEmpty()) {
+    // Delete a job (only for EMPLOYER and only their jobs)
+    @DeleteMapping("/my-jobs/{id}")
+    @PreAuthorize("hasAuthority('EMPLOYER')")
+    public ResponseEntity<?> deleteJob(@PathVariable Integer id) {
+        try {
+            jobService.deleteJob(id);
+            return ResponseEntity.status(HttpStatus.OK).body(new ResponseModel(
+                    200,
+                    null,
+                    "Job deleted successfully"
+            ));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseModel(
+                    403,
+                    null,
+                    e.getMessage()
+            ));
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseModel(
                     400,
                     null,
-                    "Status cannot be empty"
+                    e.getMessage()
             ));
-        }
-        
-        try {
-            boolean updated = employerService.updateApplicationStatus(candidateId, jobId, newStatus);
-            if (updated) {
-                return ResponseEntity.status(HttpStatus.OK).body(new ResponseModel(
-                        200,
+        } catch (Exception e) {
+            if (e.getMessage().contains("foreign key constraint")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseModel(
+                        400,
                         null,
-                        "Application status updated successfully"
-                ));
-            } else {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(
-                        500,
-                        null,
-                        "Failed to update application status"
+                        "Cannot delete this job because candidates have already applied"
                 ));
             }
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseModel(
-                    400,
-                    null,
-                    e.getMessage()
-            ));
-        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(
                     500,
                     null,
-                    e.getMessage()
+                    "Error deleting job: " + e.getMessage()
             ));
         }
     }
