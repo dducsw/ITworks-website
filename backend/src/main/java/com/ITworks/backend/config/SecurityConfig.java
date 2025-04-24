@@ -55,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers("/api/employers/my-jobs/**").hasAuthority("EMPLOYER")
                         .requestMatchers("/api/jobs/**").hasAuthority("EMPLOYER")
+                        .requestMatchers("/error").permitAll() // Thêm dòng này
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
