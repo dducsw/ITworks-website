@@ -42,7 +42,4 @@ public class JobCreateDTO {
     @NotNull(message = "Ngày hết hạn không được để trống")
     @Future(message = "Ngày hết hạn phải sau thời điểm hiện tại")
     private LocalDateTime expireDate;
-
-    @NotBlank(message = "Trạng thái công việc không được để trống")
-    private String jobStatus;
 }

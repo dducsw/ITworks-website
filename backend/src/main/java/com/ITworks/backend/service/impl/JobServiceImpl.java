@@ -8,11 +8,8 @@ import com.ITworks.backend.repositories.EmployerRepository;
 import com.ITworks.backend.repositories.JobRepository;
 import com.ITworks.backend.repositories.UserRepository;
 import com.ITworks.backend.entity.User;
-// import com.ITworks.backend.repository.ApplyRepository;
 import com.ITworks.backend.dto.Job.JobCreateDTO;
 import com.ITworks.backend.dto.Job.JobDTO;
-
-
 import com.ITworks.backend.service.JobService;
 
 import lombok.RequiredArgsConstructor;
@@ -24,6 +21,13 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.StoredProcedureQuery;
+import jakarta.persistence.ParameterMode;
+import jakarta.persistence.Query;
+
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,6 +36,9 @@ import java.util.regex.Pattern;
 @Service
 @RequiredArgsConstructor
 public class JobServiceImpl implements JobService {
+    
+    @PersistenceContext
+    private EntityManager entityManager;
     
     @Autowired
     private final JobMapper jobMapper;
@@ -87,59 +94,124 @@ public class JobServiceImpl implements JobService {
         return jobMapper.toJobDTO(saveJob);
     }
     
+    // Add this new method to call the stored procedure using EntityManager
+    private Integer executeInsertJobProcedure(
+            String jobType,
+            String contractType,
+            String level,
+            Integer quantity,
+            BigDecimal salaryFrom,
+            BigDecimal salaryTo,
+            Integer requireExpYear,
+            String location,
+            String jobDescription,
+            String jobName,
+            LocalDateTime expireDate,
+            Integer employerId,
+            String taxNumber) {
+        
+        StoredProcedureQuery query = entityManager.createStoredProcedureQuery("InsertJob");
+        
+        // Register the parameters
+        query.registerStoredProcedureParameter("JobType", String.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("ContractType", String.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("Level", String.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("Quantity", Integer.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("SalaryFrom", BigDecimal.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("SalaryTo", BigDecimal.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("RequireExpYear", Integer.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("Location", String.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("JD", String.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("JobName", String.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("expireDate", LocalDateTime.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("EmployerID", Integer.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("TaxNumber", String.class, ParameterMode.IN);
+        
+        // Set parameter values
+        query.setParameter("JobType", jobType);
+        query.setParameter("ContractType", contractType);
+        query.setParameter("Level", level);
+        query.setParameter("Quantity", quantity);
+        query.setParameter("SalaryFrom", salaryFrom);
+        query.setParameter("SalaryTo", salaryTo);
+        query.setParameter("RequireExpYear", requireExpYear);
+        query.setParameter("Location", location);
+        query.setParameter("JD", jobDescription);
+        query.setParameter("JobName", jobName);
+        query.setParameter("expireDate", expireDate);
+        query.setParameter("EmployerID", employerId);
+        query.setParameter("TaxNumber", taxNumber);
+        
+        // Execute the stored procedure
+        query.execute();
+        
+        // After calling the procedure, query for the latest job with matching criteria
+        Query idQuery = entityManager.createNativeQuery(
+            "SELECT TOP 1 JobID FROM JOB " +
+            "WHERE JobType = :jobType AND JobName = :jobName AND EmployerID = :employerId " +
+            "ORDER BY postDate DESC"
+        );
+        
+        idQuery.setParameter("jobType", jobType);
+        idQuery.setParameter("jobName", jobName);
+        idQuery.setParameter("employerId", employerId);
+        
+        Integer newJobId = ((Number) idQuery.getSingleResult()).intValue();
+        return newJobId;
+    }
+    
     @Override
     @Transactional
     public JobDTO createJob(JobCreateDTO jobCreateDTO) {
-        // Lấy thông tin employer từ người dùng đăng nhập hiện tại
+        // Xác thực người dùng hiện tại
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         
-        // Kiểm tra quyền EMPLOYER trước khi tạo job
+        // Kiểm tra quyền EMPLOYER
         if (!authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("EMPLOYER"))) {
             throw new AccessDeniedException("Only employers can create jobs");
         }
         
-        // Lấy ID của người dùng từ token claim hoặc database
+        // Lấy thông tin employer
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         
-        // Tìm employer từ user để lấy thông tin tax number
         Employer employer = employerRepository.findById(user.getId())
                 .orElseThrow(() -> new AccessDeniedException("User is not an employer"));
         
-        
-        // Các xử lý tiếp theo...
-        Job job = new Job();
-        job.setJobName(jobCreateDTO.getJobName());
-        job.setJobType(jobCreateDTO.getJobType());
-        job.setContractType(jobCreateDTO.getContractType());
-        job.setLevel(jobCreateDTO.getLevel());
-        job.setQuantity(jobCreateDTO.getQuantity());
-        job.setSalaryFrom(jobCreateDTO.getSalaryFrom());
-        job.setSalaryTo(jobCreateDTO.getSalaryTo());
-        job.setRequireExpYear(jobCreateDTO.getRequireExpYear());
-        job.setLocation(jobCreateDTO.getLocation());
-        job.setJobDescription(jobCreateDTO.getJobDescription());
-        job.setExpireDate(jobCreateDTO.getExpireDate());
-        job.setJobStatus(jobCreateDTO.getJobStatus());
-        job.setEmployerId(employer.getEmployerId());
-        job.setTaxNumber(employer.getTaxNumber());
-
-        // Validate job data
-        validateJobData(job);
-
-        // Set current datetime as post date
-        job.setPostDate(LocalDateTime.now());
-
-        // Save and return the job
-        return jobMapper.toJobDTO(jobRepository.save(job));
+        try {
+            // Gọi stored procedure using EntityManager
+            Integer newJobId = executeInsertJobProcedure(
+                jobCreateDTO.getJobType(),
+                jobCreateDTO.getContractType(),
+                jobCreateDTO.getLevel(),
+                jobCreateDTO.getQuantity(),
+                jobCreateDTO.getSalaryFrom(),
+                jobCreateDTO.getSalaryTo(),
+                jobCreateDTO.getRequireExpYear(),
+                jobCreateDTO.getLocation(),
+                jobCreateDTO.getJobDescription(),
+                jobCreateDTO.getJobName(),
+                jobCreateDTO.getExpireDate(),
+                employer.getEmployerId(),
+                employer.getTaxNumber()
+            );
+            
+            // Lấy job mới tạo
+            Job newJob = jobRepository.findById(newJobId)
+                    .orElseThrow(() -> new IllegalArgumentException("Job not created"));
+                    
+            return jobMapper.toJobDTO(newJob);
+        } catch (Exception e) {
+            throw new RuntimeException("Error creating job: " + e.getMessage(), e);
+        }
     }
     
     @Override
     @Transactional
     public JobDTO updateJob(Integer id, Job jobDetails) {
-        // Xác minh quyền EMPLOYER
+        // Xác thực employer
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         
@@ -156,67 +228,46 @@ public class JobServiceImpl implements JobService {
         Employer employer = employerRepository.findById(user.getId())
                 .orElseThrow(() -> new AccessDeniedException("User is not an employer"));
         
-        // Tìm job cần cập nhật
+        // Kiểm tra quyền sở hữu job
         Job existingJob = jobRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Job with ID " + id + " not found"));
         
-        // Kiểm tra quyền sở hữu job (chỉ employer tạo job mới có thể sửa)
         if (!existingJob.getEmployerId().equals(employer.getEmployerId())) {
             throw new AccessDeniedException("You can only update your own jobs");
         }
         
-        // Cập nhật job (giữ nguyên code hiện tại)
-        if (jobDetails.getJobType() != null) {
-            existingJob.setJobType(jobDetails.getJobType());
+        try {
+            // Gọi stored procedure
+            jobRepository.callUpdateJobProcedure(
+                id,
+                jobDetails.getJobType(),
+                jobDetails.getContractType(),
+                jobDetails.getLevel(),
+                jobDetails.getQuantity(),
+                jobDetails.getSalaryFrom(),
+                jobDetails.getSalaryTo(),
+                jobDetails.getRequireExpYear(),
+                jobDetails.getLocation(),
+                jobDetails.getJobDescription(),
+                jobDetails.getJobName(),
+                jobDetails.getExpireDate(),
+                jobDetails.getJobStatus()
+            );
+            
+            // Lấy job sau khi cập nhật
+            Job updatedJob = jobRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Job not found after update"));
+            
+            return jobMapper.toJobDTO(updatedJob);
+        } catch (Exception e) {
+            throw new RuntimeException("Error updating job: " + e.getMessage(), e);
         }
-        if (jobDetails.getContractType() != null) {
-            existingJob.setContractType(jobDetails.getContractType());
-        }
-        if (jobDetails.getLevel() != null) {
-            existingJob.setLevel(jobDetails.getLevel());
-        }
-        if (jobDetails.getQuantity() != null) {
-            validatePositiveQuantity(jobDetails.getQuantity());
-            existingJob.setQuantity(jobDetails.getQuantity());
-        }
-        if (jobDetails.getSalaryFrom() != null) {
-            validateNonNegativeSalary(jobDetails.getSalaryFrom());
-            existingJob.setSalaryFrom(jobDetails.getSalaryFrom());
-        }
-        if (jobDetails.getSalaryTo() != null) {
-            BigDecimal fromSalary = jobDetails.getSalaryFrom() != null ? 
-                                 jobDetails.getSalaryFrom() : existingJob.getSalaryFrom();
-            validateSalaryRange(fromSalary, jobDetails.getSalaryTo());
-            existingJob.setSalaryTo(jobDetails.getSalaryTo());
-        }
-        if (jobDetails.getRequireExpYear() != null) {
-            validateNonNegativeExperience(jobDetails.getRequireExpYear());
-            existingJob.setRequireExpYear(jobDetails.getRequireExpYear());
-        }
-        if (jobDetails.getLocation() != null) {
-            existingJob.setLocation(jobDetails.getLocation());
-        }
-        if (jobDetails.getJobDescription() != null) {
-            existingJob.setJobDescription(jobDetails.getJobDescription());
-        }
-        if (jobDetails.getJobName() != null) {
-            existingJob.setJobName(jobDetails.getJobName());
-        }
-        if (jobDetails.getExpireDate() != null) {
-            validateFutureDate(jobDetails.getExpireDate(), existingJob.getPostDate());
-            existingJob.setExpireDate(jobDetails.getExpireDate());
-        }
-        if (jobDetails.getJobStatus() != null) {
-            existingJob.setJobStatus(jobDetails.getJobStatus());
-        }
-        
-        return jobMapper.toJobDTO(jobRepository.save(existingJob));
     }
 
     @Override
     @Transactional
     public void deleteJob(Integer id) {
-        // Xác minh quyền EMPLOYER
+        // Xác thực employer
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         
@@ -233,17 +284,20 @@ public class JobServiceImpl implements JobService {
         Employer employer = employerRepository.findById(user.getId())
                 .orElseThrow(() -> new AccessDeniedException("User is not an employer"));
         
-        // Tìm job cần xóa
+        // Kiểm tra quyền sở hữu job
         Job job = jobRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Job with ID " + id + " not found"));
         
-        // Kiểm tra quyền sở hữu job (chỉ employer tạo job mới có thể xóa)
         if (!job.getEmployerId().equals(employer.getEmployerId())) {
             throw new AccessDeniedException("You can only delete your own jobs");
         }
         
-        // Xóa job
-        jobRepository.delete(job);
+        try {
+            // Gọi stored procedure
+            jobRepository.callDeleteJobProcedure(id);
+        } catch (Exception e) {
+            throw new RuntimeException("Error deleting job: " + e.getMessage(), e);
+        }
     }
 
     @Override
