@@ -165,25 +165,39 @@ public class EmployerServiceImpl implements EmployerService {
 
     @Override
     public List<JobApplicationStatsDTO> getJobApplicationStats(Integer employerId) {
-        // 1. Gọi hàm SQL từ repository (hiệu quả nhất)
-        List<Object[]> results = jobRepository.getJobApplicationStats(employerId);
+        // Lấy danh sách công việc đang mở của employer
+        List<Job> activeJobs = jobRepository.findByEmployerIdAndJobStatus(employerId, "Đang mở");
         
         List<JobApplicationStatsDTO> statsList = new ArrayList<>();
-        for (Object[] row : results) {
+        
+        for (Job job : activeJobs) {
+            // Tạo stats cho mỗi job
             JobApplicationStatsDTO stats = new JobApplicationStatsDTO();
-            stats.setJobId((Integer) row[0]);
-
-            stats.setJobName((String) row[1]);
-            if (row[2] != null) {
-                java.sql.Date sqlDate = (java.sql.Date) row[2];
-                stats.setCreatedDate(sqlDate.toLocalDate());
-            } else {
-                stats.setCreatedDate(null);
+            stats.setJobId(job.getJobId());
+            stats.setJobName(job.getJobName());
+            
+            // Xử lý ngày tháng
+            if (job.getPostDate() != null) {
+                stats.setCreatedDate(job.getPostDate().toLocalDate());
             }
-            stats.setDaTuyen((Integer) row[3]);
-            stats.setDaNhan((Integer) row[4]);
-            stats.setTuChoi((Integer) row[5]);
-            stats.setChoDuyet((Integer) row[6]);
+            
+            // Tìm tất cả đơn ứng tuyển cho job này
+            List<Apply> applications = applyRepository.findByJobId(job.getJobId());
+            
+            // Đếm số lượng theo từng trạng thái
+            int daNhan = 0, tuChoi = 0, choDuyet = 0;
+            
+            for (Apply apply : applications) {
+                String status = apply.getStatus();
+                if ("Đã nhận".equals(status)) daNhan++;
+                else if ("Từ chối".equals(status)) tuChoi++;
+                else if ("Chờ duyệt".equals(status)) choDuyet++;
+            }
+            
+            stats.setDaNhan(daNhan);
+            stats.setTuChoi(tuChoi);
+            stats.setChoDuyet(choDuyet);
+            
             statsList.add(stats);
         }
         

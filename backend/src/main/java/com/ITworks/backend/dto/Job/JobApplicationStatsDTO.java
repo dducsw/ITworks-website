@@ -11,5 +11,4 @@ public class JobApplicationStatsDTO {
     private Integer daNhan;
     private Integer tuChoi;
     private Integer choDuyet;
-    private Integer daTuyen;
 }

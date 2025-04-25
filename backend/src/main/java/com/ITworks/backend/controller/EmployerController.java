@@ -166,6 +166,7 @@ public class EmployerController {
         }
     }
     @GetMapping("/my-jobs/stats")
+    @PreAuthorize("hasAuthority('EMPLOYER')")
     public ResponseEntity<?> getMyJobsStats() {
         try {
             List<JobApplicationStatsDTO> stats = employerService.getCurrentEmployerJobStats();

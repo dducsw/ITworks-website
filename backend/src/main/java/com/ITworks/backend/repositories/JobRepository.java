@@ -3,8 +3,8 @@ package com.ITworks.backend.repositories;
 import com.ITworks.backend.entity.Job;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
 
 
 import java.util.List;
@@ -29,8 +29,5 @@ public interface JobRepository extends JpaRepository<Job, Integer> {
     
     List<Job> findByJobStatus(String status);
     List<Job> findByEmployerIdAndJobStatus(Integer employerId, String status);
-    
-    // Thêm vào interface JobRepository
-    @Query(value = "SELECT * FROM fn_ThongTinUngTuyenTheoNhaTuyenDung(:employerId)", nativeQuery = true)
-    List<Object[]> getJobApplicationStats(@Param("employerId") Integer employerId);
+
 }
