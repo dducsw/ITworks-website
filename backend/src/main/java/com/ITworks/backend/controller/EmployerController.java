@@ -3,6 +3,7 @@ package com.ITworks.backend.controller;
 import com.ITworks.backend.dto.ResponseModel;
 
 import com.ITworks.backend.dto.Job.JobDTO;
+import com.ITworks.backend.dto.Job.JobApplicationStatsDTO;
 import com.ITworks.backend.dto.Job.JobCreateDTO;
 import com.ITworks.backend.dto.Job.JobUpdateDTO;
 import com.ITworks.backend.entity.Job;
@@ -161,6 +162,23 @@ public class EmployerController {
                     500,
                     null,
                     "Error deleting job: " + e.getMessage()
+            ));
+        }
+    }
+    @GetMapping("/my-jobs/stats")
+    public ResponseEntity<?> getMyJobsStats() {
+        try {
+            List<JobApplicationStatsDTO> stats = employerService.getCurrentEmployerJobStats();
+            return ResponseEntity.ok(new ResponseModel(
+                    200,
+                    stats,
+                    "Retrieved job application statistics successfully"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(
+                    500,
+                    "",
+                    e.getMessage()
             ));
         }
     }

@@ -19,8 +19,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import com.ITworks.backend.dto.Job.JobDTO; // Import JobDTO
+import com.ITworks.backend.dto.Job.JobApplicationStatsDTO; // Import JobApplicationStatsDTO
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -159,5 +161,49 @@ public class EmployerServiceImpl implements EmployerService {
                 .orElseThrow(() -> new RuntimeException("Current user is not an employer"));
         
         return getEmployerJobsByStatus(employer.getEmployerId(), status);
+    }
+
+    @Override
+    public List<JobApplicationStatsDTO> getJobApplicationStats(Integer employerId) {
+        // 1. Gọi hàm SQL từ repository (hiệu quả nhất)
+        List<Object[]> results = jobRepository.getJobApplicationStats(employerId);
+        
+        List<JobApplicationStatsDTO> statsList = new ArrayList<>();
+        for (Object[] row : results) {
+            JobApplicationStatsDTO stats = new JobApplicationStatsDTO();
+            stats.setJobId((Integer) row[0]);
+
+            stats.setJobName((String) row[1]);
+            if (row[2] != null) {
+                java.sql.Date sqlDate = (java.sql.Date) row[2];
+                stats.setCreatedDate(sqlDate.toLocalDate());
+            } else {
+                stats.setCreatedDate(null);
+            }
+            stats.setDaTuyen((Integer) row[3]);
+            stats.setDaNhan((Integer) row[4]);
+            stats.setTuChoi((Integer) row[5]);
+            stats.setChoDuyet((Integer) row[6]);
+            statsList.add(stats);
+        }
+        
+        return statsList;
+    }
+
+    @Override
+    public List<JobApplicationStatsDTO> getCurrentEmployerJobStats() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AccessDeniedException("Not authenticated");
+        }
+        
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        
+        Employer employer = employerRepository.findById(user.getId())
+                .orElseThrow(() -> new RuntimeException("Current user is not an employer"));
+        
+        return getJobApplicationStats(employer.getEmployerId());
     }
 }

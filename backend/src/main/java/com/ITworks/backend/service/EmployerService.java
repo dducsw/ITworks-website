@@ -5,7 +5,9 @@ import com.ITworks.backend.entity.Apply;
 import com.ITworks.backend.entity.Employer;
 import java.util.Optional;
 import java.util.List;
-import com.ITworks.backend.dto.Job.JobDTO; // Import JobDTO if it exists in this package
+
+import com.ITworks.backend.dto.Job.JobApplicationStatsDTO;
+import com.ITworks.backend.dto.Job.JobDTO; 
 
 public interface EmployerService {
     List<Employer> findAllEmployers();
@@ -35,4 +37,7 @@ public interface EmployerService {
     Optional<Employer> findByUsername(String username);
     Optional<Employer> findByEmail(String email);
 
+    // Thêm vào interface EmployerService
+    List<JobApplicationStatsDTO> getJobApplicationStats(Integer employerId);
+    List<JobApplicationStatsDTO> getCurrentEmployerJobStats();
 }
