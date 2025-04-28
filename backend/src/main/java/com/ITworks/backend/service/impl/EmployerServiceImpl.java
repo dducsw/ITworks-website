@@ -19,13 +19,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import com.ITworks.backend.dto.Job.JobDTO; // Import JobDTO
-import com.ITworks.backend.dto.Job.JobApplicationStatsDTO; // Import JobApplicationStatsDTO
+import com.ITworks.backend.dto.Job.JobApplicationStatsDTO;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+
+
 
 // Import User entity
 import com.ITworks.backend.entity.User;
@@ -165,39 +167,23 @@ public class EmployerServiceImpl implements EmployerService {
 
     @Override
     public List<JobApplicationStatsDTO> getJobApplicationStats(Integer employerId) {
-        // Lấy danh sách công việc đang mở của employer
-        List<Job> activeJobs = jobRepository.findByEmployerIdAndJobStatus(employerId, "Đang mở");
         
-        List<JobApplicationStatsDTO> statsList = new ArrayList<>();
+        List<Object[]> results = jobRepository.getJobApplicationStats(employerId);
         
-        for (Job job : activeJobs) {
-            // Tạo stats cho mỗi job
+        List<JobApplicationStatsDTO> statsList = new java.util.ArrayList<>();
+        for (Object[] row : results) {
             JobApplicationStatsDTO stats = new JobApplicationStatsDTO();
-            stats.setJobId(job.getJobId());
-            stats.setJobName(job.getJobName());
-            
-            // Xử lý ngày tháng
-            if (job.getPostDate() != null) {
-                stats.setCreatedDate(job.getPostDate().toLocalDate());
+            stats.setJobId((Integer) row[0]);
+            stats.setJobName((String) row[1]);
+            if (row[2] != null) {
+                java.sql.Date sqlDate = (java.sql.Date) row[2];
+                stats.setCreatedDate(sqlDate.toLocalDate());
+            } else {
+                stats.setCreatedDate(null);
             }
-            
-            // Tìm tất cả đơn ứng tuyển cho job này
-            List<Apply> applications = applyRepository.findByJobId(job.getJobId());
-            
-            // Đếm số lượng theo từng trạng thái
-            int daNhan = 0, tuChoi = 0, choDuyet = 0;
-            
-            for (Apply apply : applications) {
-                String status = apply.getStatus();
-                if ("Đã nhận".equals(status)) daNhan++;
-                else if ("Từ chối".equals(status)) tuChoi++;
-                else if ("Chờ duyệt".equals(status)) choDuyet++;
-            }
-            
-            stats.setDaNhan(daNhan);
-            stats.setTuChoi(tuChoi);
-            stats.setChoDuyet(choDuyet);
-            
+            stats.setDaNhan((Integer) row[3]);
+            stats.setTuChoi((Integer) row[4]);
+            stats.setChoDuyet((Integer) row[5]);
             statsList.add(stats);
         }
         
@@ -220,4 +206,4 @@ public class EmployerServiceImpl implements EmployerService {
         
         return getJobApplicationStats(employer.getEmployerId());
     }
-}
+    }
