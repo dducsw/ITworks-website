@@ -3,6 +3,8 @@ package com.ITworks.backend.controller;
 import com.ITworks.backend.dto.ResponseModel;
 
 import com.ITworks.backend.dto.Job.JobDTO;
+import com.ITworks.backend.dto.Job.JobSearchDTO;
+import com.ITworks.backend.dto.Job.JobSearchResponseDTO;
 import com.ITworks.backend.dto.Job.JobApplicationStatsDTO;
 import com.ITworks.backend.dto.Job.JobCreateDTO;
 import com.ITworks.backend.dto.Job.JobUpdateDTO;
@@ -180,6 +182,30 @@ public class EmployerController {
                     500,
                     "",
                     e.getMessage()
+            ));
+        }
+    }
+    @PostMapping("/jobs/search-by-salary-date")
+    @PreAuthorize("hasAuthority('EMPLOYER')")
+    public ResponseEntity<?> searchJobsBySalaryAndDate(@RequestBody JobSearchDTO searchDTO) {
+        try {
+            List<JobSearchResponseDTO> jobs = employerService.findCurrentEmployerJobsBySalaryAndDate(searchDTO);
+            return ResponseEntity.ok(new ResponseModel(
+                    200,
+                    jobs,
+                    "Tìm kiếm công việc thành công"
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseModel(
+                    400,
+                    null,
+                    e.getMessage()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(
+                    500,
+                    null,
+                    "Lỗi khi tìm kiếm công việc: " + e.getMessage()
             ));
         }
     }

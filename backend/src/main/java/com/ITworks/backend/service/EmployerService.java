@@ -1,13 +1,14 @@
 package com.ITworks.backend.service;
 
-
 import com.ITworks.backend.entity.Apply;
 import com.ITworks.backend.entity.Employer;
+import com.ITworks.backend.dto.Job.JobApplicationStatsDTO;
+import com.ITworks.backend.dto.Job.JobDTO;
+import com.ITworks.backend.dto.Job.JobSearchDTO;
+import com.ITworks.backend.dto.Job.JobSearchResponseDTO;
+
 import java.util.Optional;
 import java.util.List;
-
-import com.ITworks.backend.dto.Job.JobApplicationStatsDTO;
-import com.ITworks.backend.dto.Job.JobDTO; 
 
 public interface EmployerService {
     List<Employer> findAllEmployers();
@@ -40,4 +41,7 @@ public interface EmployerService {
     // Thêm vào interface EmployerService
     List<JobApplicationStatsDTO> getJobApplicationStats(Integer employerId);
     List<JobApplicationStatsDTO> getCurrentEmployerJobStats();
+    
+    List<JobSearchResponseDTO> findJobsBySalaryAndDate(Integer employerId, String taxNumber, JobSearchDTO searchDTO);
+    List<JobSearchResponseDTO> findCurrentEmployerJobsBySalaryAndDate(JobSearchDTO searchDTO);
 }
