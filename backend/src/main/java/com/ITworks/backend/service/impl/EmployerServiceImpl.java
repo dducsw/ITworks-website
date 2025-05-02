@@ -296,53 +296,61 @@ public class EmployerServiceImpl implements EmployerService {
         
         for (Object[] row : results) {
             if (row == null || row.length < 7) continue;
-            // Debug: log kiểu dữ liệu thực tế
-            for (int i = 0; i < row.length; i++) {
-                System.out.println("row[" + i + "] = " + row[i] + " (" + (row[i] != null ? row[i].getClass() : "null") + ")");
-            }
             JobSearchResponseDTO dto = new JobSearchResponseDTO();
-            dto.setJobName(row[0] != null ? (String) row[0] : null);
-            dto.setCompanyName(row[1] != null ? (String) row[1] : null);
-            dto.setJd(row[2] != null ? (String) row[2] : null);
-            
-            // Handle salary conversion safely
-            if (row[3] != null) {
-                if (row[3] instanceof BigDecimal) {
-                    dto.setSalaryFrom((BigDecimal) row[3]);
-                } else if (row[3] instanceof Number) {
-                    dto.setSalaryFrom(new BigDecimal(((Number) row[3]).toString()));
-                }
-            }
-            
+
+            // row[0]: jobID
+            dto.setJobID(row[0] != null ? (Integer) row[0] : null);
+
+            // row[1]: jobName
+            dto.setJobName(row[1] != null ? (String) row[1] : null);
+
+            // row[2]: companyName
+            dto.setCompanyName(row[2] != null ? (String) row[2] : null);
+
+            // row[3]: jd (job description)
+            dto.setJd(row[3] != null ? (String) row[3] : null);
+
+            // row[4]: salaryFrom
             if (row[4] != null) {
-                if (row[4] instanceof BigDecimal) {
-                    dto.setSalaryTo((BigDecimal) row[4]);
-                } else if (row[4] instanceof Number) {
-                    dto.setSalaryTo(new BigDecimal(((Number) row[4]).toString()));
-                }
+            if (row[4] instanceof BigDecimal) {
+                dto.setSalaryFrom((BigDecimal) row[4]);
+            } else if (row[4] instanceof Number) {
+                dto.setSalaryFrom(new BigDecimal(((Number) row[4]).toString()));
             }
-            
-            // Handle date conversion safely
+            }
+
+            // row[5]: salaryTo
             if (row[5] != null) {
-                if (row[5] instanceof java.sql.Timestamp) {
-                    dto.setExpireDate(((java.sql.Timestamp) row[5]).toLocalDateTime());
-                } else if (row[5] instanceof java.util.Date) {
-                    dto.setExpireDate(new java.sql.Timestamp(((java.util.Date) row[5]).getTime()).toLocalDateTime());
-                }
+            if (row[5] instanceof BigDecimal) {
+                dto.setSalaryTo((BigDecimal) row[5]);
+            } else if (row[5] instanceof Number) {
+                dto.setSalaryTo(new BigDecimal(((Number) row[5]).toString()));
             }
-            
+            }
+
+            // row[6]: expireDate
             if (row[6] != null) {
-                if (row[6] instanceof java.sql.Timestamp) {
-                    dto.setPostDate(((java.sql.Timestamp) row[6]).toLocalDateTime());
-                } else if (row[6] instanceof java.util.Date) {
-                    dto.setPostDate(new java.sql.Timestamp(((java.util.Date) row[6]).getTime()).toLocalDateTime());
-                }
+            if (row[6] instanceof java.sql.Timestamp) {
+                dto.setExpireDate(((java.sql.Timestamp) row[6]).toLocalDateTime());
+            } else if (row[6] instanceof java.util.Date) {
+                dto.setExpireDate(new java.sql.Timestamp(((java.util.Date) row[6]).getTime()).toLocalDateTime());
             }
-            
-            if (row.length >= 8) {
-                dto.setJobStatus(row[7] != null ? (String) row[7] : null);
             }
-            
+
+            // row[7]: postDate (if exists)
+            if (row.length >= 8 && row[7] != null) {
+            if (row[7] instanceof java.sql.Timestamp) {
+                dto.setPostDate(((java.sql.Timestamp) row[7]).toLocalDateTime());
+            } else if (row[7] instanceof java.util.Date) {
+                dto.setPostDate(new java.sql.Timestamp(((java.util.Date) row[7]).getTime()).toLocalDateTime());
+            }
+            }
+
+            // row[8]: jobStatus (if exists)
+            if (row.length >= 9) {
+                dto.setJobStatus(row[8] != null ? (String) row[8] : null);
+            }
+
             dtoList.add(dto);
         }
         

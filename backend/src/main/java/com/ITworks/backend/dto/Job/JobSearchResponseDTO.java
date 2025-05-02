@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class JobSearchResponseDTO {
+    private Integer jobID;
     private String jobName;
     private String companyName;
     private String jd;
